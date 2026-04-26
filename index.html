@@ -134,24 +134,6 @@
     .slot.selected { border-color: var(--accent); border-style: solid; }
     .slot.rolled   { border-color: var(--accent); border-style: solid; box-shadow: 0 0 14px rgba(233,69,96,0.45); }
 
-    .slot-badge {
-      position: absolute;
-      top: 4px;
-      left: 6px;
-      font-size: 0.5rem;
-      font-weight: 700;
-      letter-spacing: 0.08em;
-      color: #1a1a2e;
-      background: var(--ink);
-      border-radius: 3px;
-      padding: 1px 4px;
-      pointer-events: none;
-      z-index: 3;
-      opacity: 0;
-      transition: opacity 0.15s;
-    }
-    .slot-badge.show { opacity: 1; }
-
     .stat {
       border: 1px dashed var(--line);
       border-radius: 8px;
@@ -2085,32 +2067,12 @@
   }
 
   const slotEls = [];
-  const slotBadges = [];
   for (let i = 0; i < N; i++) {
     const s = document.createElement('div');
     s.className = 'slot';
-    const badge = document.createElement('span');
-    badge.className = 'slot-badge';
-    s.appendChild(badge);
     s.addEventListener('click', () => onHandTap(i));
     handSection.appendChild(s);
     slotEls.push(s);
-    slotBadges.push(badge);
-  }
-
-  function refreshSlotBadge(slotIdx) {
-    const badge = slotBadges[slotIdx];
-    const dieId = hand[slotIdx];
-    if (dieId == null) { badge.className = 'slot-badge'; badge.textContent = ''; return; }
-    const type = dice[dieId].type;
-    const text = type && type.badge ? type.badge : '';
-    const color = type && type.color != null ? type.color : 0xffffff;
-    badge.textContent = text;
-    badge.style.background = text ? '#' + color.toString(16).padStart(6, '0') : '';
-    badge.className = 'slot-badge' + (text ? ' show' : '');
-  }
-  function refreshAllSlotBadges() {
-    for (let i = 0; i < N; i++) refreshSlotBadge(i);
   }
 
   const statFace    = document.getElementById('stat-face');
@@ -2688,7 +2650,6 @@
     hand[slotIdx] = null;
     board[tileIdx] = dieId;
     setSlotClass(slotIdx, '');
-    refreshSlotBadge(slotIdx);
     die.location = { zone: 'board', slot: tileIdx };
     game.rolledDie = null;
 
@@ -2862,7 +2823,6 @@
     const boardSlot = die.location.slot;
     board[boardSlot] = null;
     hand[targetSlot] = die.id;
-    refreshSlotBadge(targetSlot);
     tileEls[boardSlot].classList.remove('occupied', 'matched');
     tileEls[boardSlot].querySelector('.tile-score').textContent = '';
     if (game.inspectedTile === boardSlot) clearInspection();
@@ -3055,7 +3015,6 @@
       applyDieTint(die, die.type && die.type.color);
       layoutDie(die);
     });
-    refreshAllSlotBadges();
 
     // Reset game state
     game.luck = 0;
@@ -4062,7 +4021,6 @@
   requestAnimationFrame(() => {
     resizeRenderer();
     dice.forEach(layoutDie);
-    refreshAllSlotBadges();
     refreshChipsUI();
     updateStrip({});
     animate();
