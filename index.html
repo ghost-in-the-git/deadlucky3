@@ -1,0 +1,4055 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Dead Lucky — Wireframe</title>
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg: #0f0f1a;
+      --line: rgba(255, 255, 255, 0.22);
+      --line-strong: rgba(255, 255, 255, 0.45);
+      --ink: rgba(255, 255, 255, 0.85);
+      --ink-dim: rgba(255, 255, 255, 0.4);
+      --accent: #e94560;
+      --gap: 8px;
+      --pad: 12px;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      overflow: hidden;
+      touch-action: manipulation;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    body {
+      display: flex;
+      flex-direction: column;
+      height: 100dvh;
+      padding: var(--pad);
+      gap: var(--pad);
+    }
+
+    .header {
+      flex: 0 0 auto;
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items: center;
+      padding: 0 4px;
+      font-size: 0.65rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--ink-dim);
+    }
+    .header .left   { justify-self: start; }
+    .header .center { justify-self: center; }
+    .header .right  { justify-self: end; }
+    .header b { color: var(--ink); font-weight: 700; font-size: 0.95rem; letter-spacing: 0.04em; margin-left: 6px; }
+
+    .burger {
+      background: transparent;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      width: 34px;
+      height: 30px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      gap: 4px;
+      cursor: pointer;
+      padding: 0;
+    }
+    .burger span {
+      display: block;
+      width: 16px;
+      height: 1.5px;
+      background: var(--ink);
+      border-radius: 1px;
+    }
+    .burger:hover { border-color: var(--line-strong); }
+
+    .board, .hand {
+      flex: 1 1 0;
+      min-height: 0;
+      position: relative;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      grid-template-rows: repeat(3, 1fr);
+      gap: var(--gap);
+    }
+
+    .score {
+      flex: 0 0 auto;
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: var(--gap);
+      padding: var(--gap) 0;
+    }
+
+    .tile, .slot {
+      position: relative;
+      border: 1px dashed var(--line);
+      border-radius: 10px;
+      min-height: 0;
+      cursor: pointer;
+    }
+
+    .tile-value {
+      position: absolute;
+      top: 5px;
+      left: 7px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--ink);
+    }
+
+    .tile-score {
+      position: absolute;
+      bottom: 5px;
+      right: 7px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--accent);
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+
+    .tile.occupied .tile-score { opacity: 1; }
+    .tile.matched { border-color: var(--accent); border-style: solid; }
+    .tile.combo { background: rgba(58, 120, 220, 0.55); }
+    .tile.inspected { box-shadow: inset 0 0 0 2px rgba(255,255,255,0.65); }
+
+    .slot.selected { border-color: var(--accent); border-style: solid; }
+    .slot.rolled   { border-color: var(--accent); border-style: solid; box-shadow: 0 0 14px rgba(233,69,96,0.45); }
+
+    .slot-badge {
+      position: absolute;
+      top: 4px;
+      left: 6px;
+      font-size: 0.5rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      color: #1a1a2e;
+      background: var(--ink);
+      border-radius: 3px;
+      padding: 1px 4px;
+      pointer-events: none;
+      z-index: 3;
+      opacity: 0;
+      transition: opacity 0.15s;
+    }
+    .slot-badge.show { opacity: 1; }
+
+    .stat {
+      border: 1px dashed var(--line);
+      border-radius: 8px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 6px 2px;
+      gap: 2px;
+    }
+    .stat .label { font-size: 0.58rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-dim); }
+    .stat .value { font-size: clamp(1rem, 4vw, 1.3rem); font-weight: 700; color: var(--ink); }
+
+    .section-label {
+      position: absolute;
+      top: 4px;
+      right: 8px;
+      font-size: 0.55rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--line-strong);
+      pointer-events: none;
+      z-index: 3;
+    }
+
+    #main-canvas {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 10;
+    }
+
+    .game-over {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 15, 26, 0.9);
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 20;
+      gap: 10px;
+    }
+    .game-over.show { display: flex; }
+    .game-over h2 { font-size: 1.2rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-dim); }
+    .game-over .big { font-size: 3.2rem; color: var(--accent); font-weight: 700; }
+    .game-over small { font-size: 0.75rem; color: var(--ink-dim); letter-spacing: 0.1em; }
+    .game-over button {
+      margin-top: 18px;
+      padding: 10px 24px;
+      background: transparent;
+      color: var(--ink);
+      border: 1px solid var(--line-strong);
+      border-radius: 6px;
+      font-size: 0.75rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      cursor: pointer;
+    }
+
+    /* ─── Overlays (home / menu / options) ───────────────────────────── */
+    .overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.9);
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 30;
+      gap: 14px;
+      padding: 24px;
+    }
+    .overlay.show { display: flex; }
+
+    .overlay h1 {
+      font-size: 2rem;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--ink);
+      margin-bottom: 8px;
+    }
+    .overlay h3 {
+      font-size: 0.75rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--ink-dim);
+      margin-bottom: 8px;
+    }
+
+    .menu-btn {
+      width: min(260px, 80vw);
+      padding: 14px 20px;
+      background: transparent;
+      color: var(--ink);
+      border: 1px solid var(--line-strong);
+      border-radius: 8px;
+      font-size: 0.85rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: border-color 0.15s, color 0.15s;
+    }
+    .menu-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .menu-btn.primary {
+      border-color: var(--accent);
+      color: var(--accent);
+      font-size: 1rem;
+    }
+    .menu-btn.danger { border-color: #8a2a2a; color: #d86a6a; }
+    .menu-btn.danger:hover { border-color: #d86a6a; color: #ff8a8a; }
+
+    .slider-row {
+      display: flex;
+      flex-direction: column;
+      width: min(260px, 80vw);
+      gap: 6px;
+    }
+    .slider-row .slider-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.7rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--ink-dim);
+    }
+    .slider-row .slider-label b { color: var(--ink); font-weight: 600; }
+    .slider-row input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 4px;
+      background: var(--line);
+      border-radius: 2px;
+      outline: none;
+    }
+    .slider-row input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: var(--accent);
+      cursor: pointer;
+    }
+    .slider-row input[type="range"]::-moz-range-thumb {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: var(--accent);
+      border: none;
+      cursor: pointer;
+    }
+
+    /* ─── Name entry ─────────────────────────────────────────────────── */
+    .name-input {
+      width: min(260px, 80vw);
+      padding: 14px 16px;
+      background: transparent;
+      color: var(--ink);
+      border: 1px solid var(--line-strong);
+      border-radius: 8px;
+      font-size: 1rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      text-align: center;
+      outline: none;
+      font-family: inherit;
+    }
+    .name-input:focus { border-color: var(--accent); }
+
+    .home-user {
+      font-size: 0.75rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--ink-dim);
+      margin-bottom: 14px;
+    }
+    .home-user b { color: var(--ink); font-weight: 600; margin-left: 8px; }
+
+    .home-chips {
+      font-size: 0.7rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--ink-dim);
+      margin-bottom: 8px;
+    }
+    .home-chips b { color: #f5c542; font-weight: 700; margin-left: 8px; }
+
+    /* ─── Shrine hub ──────────────────────────────────────────────────── */
+    .shrine-hub {
+      justify-content: flex-start;
+      padding: 18px 16px;
+      gap: 14px;
+    }
+    .shrine-topbar {
+      width: min(320px, 92vw);
+      display: grid;
+      grid-template-columns: 40px 1fr;
+      align-items: center;
+      gap: 10px;
+    }
+    .shrine-back {
+      background: transparent;
+      border: 1px solid var(--line-strong);
+      color: var(--ink);
+      border-radius: 6px;
+      width: 40px;
+      height: 34px;
+      font-size: 1rem;
+      cursor: pointer;
+      padding: 0;
+    }
+    .shrine-title {
+      font-size: 0.9rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--ink);
+    }
+    .currency-strip {
+      width: min(320px, 92vw);
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .currency-strip .chip, .currency-strip .shard {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 10px 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.62rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--ink-dim);
+    }
+    .currency-strip b { font-weight: 700; font-size: 0.9rem; }
+    .currency-strip .chip b  { color: #f5c542; }
+    .currency-strip .shard b { color: #27ae60; }
+
+    .shrine-cards {
+      width: min(320px, 92vw);
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .shrine-card {
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid var(--line-strong);
+      border-radius: 10px;
+      color: var(--ink);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      padding: 18px 10px;
+      font-family: inherit;
+      aspect-ratio: 1 / 1;
+    }
+    .shrine-card.wide {
+      aspect-ratio: auto;
+      width: min(320px, 92vw);
+      padding: 16px 14px;
+    }
+    .shrine-card.disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+    .shrine-card:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+    .shrine-card .card-title {
+      font-size: 1rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+    }
+    .shrine-card .card-sub {
+      font-size: 0.58rem;
+      letter-spacing: 0.12em;
+      color: var(--ink-dim);
+      text-transform: uppercase;
+      text-align: center;
+    }
+
+    .dev-btn {
+      background: transparent;
+      border: 1px dashed #f5c542;
+      color: #f5c542;
+      border-radius: 6px;
+      padding: 6px 10px;
+      font-family: inherit;
+      font-size: 0.55rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      cursor: pointer;
+      opacity: 0.65;
+    }
+    .dev-btn:hover { opacity: 1; }
+
+    /* ─── Mode / Deck carousel ───────────────────────────────────────── */
+    .carousel-screen {
+      justify-content: flex-start;
+      padding: 18px 16px;
+      gap: 18px;
+    }
+    .carousel {
+      position: relative;
+      width: min(320px, 92vw);
+      overflow: hidden;
+      border-radius: 12px;
+    }
+    .carousel-track {
+      display: flex;
+      transition: transform 0.28s cubic-bezier(0.22, 0.61, 0.36, 1);
+      touch-action: pan-y;
+      will-change: transform;
+    }
+    .carousel-track.dragging { transition: none; }
+    .carousel-card {
+      flex: 0 0 100%;
+      min-width: 0;
+      box-sizing: border-box;
+      padding: 24px 18px;
+      border: 1px solid var(--line-strong);
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.02);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      user-select: none;
+    }
+    .carousel-arrow {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      z-index: 2;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: rgba(0, 0, 0, 0.55);
+      border: 1px solid var(--line-strong);
+      color: var(--ink);
+      font-size: 1.3rem;
+      line-height: 1;
+      cursor: pointer;
+      font-family: inherit;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+    }
+    .carousel-arrow:hover { background: rgba(0, 0, 0, 0.8); }
+    .carousel-arrow:disabled { opacity: 0.25; cursor: not-allowed; }
+    .carousel-arrow.prev { left: 8px; }
+    .carousel-arrow.next { right: 8px; }
+
+    .carousel-dots {
+      display: flex;
+      gap: 6px;
+    }
+    .carousel-dots .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      border: 1px solid var(--line-strong);
+      background: transparent;
+    }
+    .carousel-dots .dot.active { background: var(--ink); border-color: var(--ink); }
+
+    .mode-card .mode-title {
+      font-size: 1.3rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--ink);
+      font-weight: 700;
+    }
+    .mode-card .mode-desc {
+      font-size: 0.68rem;
+      letter-spacing: 0.12em;
+      color: var(--ink-dim);
+      text-align: center;
+      text-transform: uppercase;
+    }
+    .mode-card .coming-soon {
+      font-size: 0.55rem;
+      letter-spacing: 0.2em;
+      color: #f5c542;
+      text-transform: uppercase;
+      border: 1px dashed #f5c542;
+      border-radius: 4px;
+      padding: 3px 8px;
+      margin-top: 4px;
+    }
+
+    .deck-card .deck-title {
+      font-size: 0.9rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--ink);
+      font-weight: 700;
+    }
+    .deck-mini-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 44px);
+      grid-template-rows: repeat(3, 44px);
+      gap: 4px;
+      justify-content: center;
+    }
+    .deck-mini-die {
+      border-radius: 5px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.55rem;
+      letter-spacing: 0.06em;
+      font-weight: 700;
+      color: rgba(0, 0, 0, 0.72);
+      text-shadow: 0 1px 0 rgba(255, 255, 255, 0.35);
+    }
+    .deck-mini-die.empty {
+      background: transparent;
+      border: 1px dashed var(--line);
+      color: var(--ink-dim);
+      text-shadow: none;
+    }
+
+    .carousel-play {
+      font-family: inherit;
+      font-size: 0.75rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      border-radius: 8px;
+      padding: 12px 36px;
+      background: transparent;
+      border: 1px solid #27ae60;
+      color: #27ae60;
+      cursor: pointer;
+    }
+    .carousel-play:hover:not(:disabled) { background: rgba(39, 174, 96, 0.1); }
+    .carousel-play:disabled {
+      border-color: var(--line);
+      color: var(--ink-dim);
+      cursor: not-allowed;
+    }
+
+    /* ─── Inventory browser ──────────────────────────────────────────── */
+    .inv-count {
+      position: absolute;
+      top: 4px;
+      right: 6px;
+      font-size: 0.6rem;
+      letter-spacing: 0.06em;
+      color: var(--ink);
+      background: rgba(0, 0, 0, 0.6);
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      padding: 1px 4px;
+      font-weight: 700;
+    }
+    .collection-entry.inv-entry { position: relative; }
+    .inv-sacrifice {
+      margin-top: 2px;
+      background: transparent;
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      color: var(--ink-dim);
+      font-family: inherit;
+      font-size: 0.5rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 2px 6px;
+      cursor: pointer;
+    }
+    .inv-sacrifice:hover { border-color: #e74c3c; color: #e74c3c; }
+
+    /* ─── Sacrifice sheet ────────────────────────────────────────────── */
+    .sacrifice-sheet {
+      background: rgba(0, 0, 0, 0.82) !important;
+      z-index: 45 !important;
+    }
+    .sheet-card {
+      background: #0a0a0f;
+      border: 1px solid var(--line-strong);
+      border-radius: 10px;
+      padding: 18px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      align-items: center;
+      width: min(300px, 88vw);
+    }
+    .sheet-title {
+      font-size: 0.85rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--ink);
+    }
+    .sheet-stepper {
+      display: grid;
+      grid-template-columns: 44px 60px 44px;
+      gap: 8px;
+      align-items: center;
+    }
+    .sheet-stepper button {
+      background: transparent;
+      border: 1px solid var(--line-strong);
+      color: var(--ink);
+      border-radius: 6px;
+      height: 36px;
+      font-size: 1.1rem;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    .sheet-stepper button:disabled { opacity: 0.3; cursor: not-allowed; }
+    .sheet-qty {
+      text-align: center;
+      font-size: 1.1rem;
+      color: var(--ink);
+      font-weight: 700;
+    }
+    .sheet-yield {
+      display: flex;
+      gap: 14px;
+      font-size: 0.62rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--ink-dim);
+    }
+    .sheet-yield b { margin-right: 4px; font-size: 0.9rem; }
+    .sheet-yield .yc b { color: #f5c542; }
+    .sheet-yield .ys b { color: #27ae60; }
+    .sheet-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      width: 100%;
+    }
+    .sheet-actions button {
+      background: transparent;
+      border: 1px solid var(--line-strong);
+      color: var(--ink);
+      border-radius: 6px;
+      padding: 9px 0;
+      font-family: inherit;
+      font-size: 0.65rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      cursor: pointer;
+    }
+    .sheet-actions .confirm { border-color: #e74c3c; color: #e74c3c; }
+    .sheet-actions .confirm:hover { background: rgba(231, 76, 60, 0.1); }
+
+    /* ─── Summon + reveal ────────────────────────────────────────────── */
+    .summon-screen, .reveal-screen {
+      justify-content: flex-start;
+      padding: 18px 16px;
+      gap: 14px;
+    }
+    .summon-actions {
+      width: min(320px, 92vw);
+      display: grid;
+      gap: 10px;
+    }
+    .summon-btn {
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid var(--line-strong);
+      color: var(--ink);
+      border-radius: 10px;
+      padding: 18px 16px;
+      font-family: inherit;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .summon-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+    .summon-btn .btn-title {
+      font-size: 0.9rem; letter-spacing: 0.16em; text-transform: uppercase;
+    }
+    .summon-btn .btn-cost {
+      font-size: 0.7rem; color: #f5c542; letter-spacing: 0.1em; font-weight: 700;
+    }
+    .summon-note {
+      font-size: 0.55rem; letter-spacing: 0.14em; color: var(--ink-dim);
+      text-transform: uppercase;
+    }
+
+    .reveal-single-stage {
+      width: min(280px, 72vw);
+      aspect-ratio: 1 / 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .reveal-single-stage canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+    .reveal-single-info {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      min-height: 44px;
+    }
+    .reveal-single-info .entry-label {
+      font-size: 0.9rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--ink);
+    }
+    .reveal-single-info .new-tag {
+      position: static;
+      font-size: 0.55rem;
+      letter-spacing: 0.18em;
+      color: #f5c542;
+      border: 1px solid #f5c542;
+      padding: 2px 8px;
+      border-radius: 4px;
+    }
+    .reveal-actions.dual {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      width: min(280px, 72vw);
+    }
+
+    .reveal-grid {
+      width: min(340px, 92vw);
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 6px;
+    }
+    .reveal-grid.single {
+      grid-template-columns: minmax(0, 140px);
+      justify-content: center;
+    }
+    .reveal-entry {
+      position: relative;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 6px 3px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      min-width: 0;
+      overflow: hidden;
+      background: rgba(255, 255, 255, 0.02);
+      box-sizing: border-box;
+    }
+    .reveal-entry.sacrificed { opacity: 0.32; }
+    .reveal-entry.new { border-color: #f5c542; }
+    .reveal-entry canvas {
+      width: 100%;
+      max-width: 44px;
+      aspect-ratio: 1 / 1;
+      border-radius: 4px;
+    }
+    .reveal-entry .entry-label {
+      font-size: 0.48rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      text-align: center;
+      color: var(--ink);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 100%;
+    }
+    .reveal-entry .new-tag {
+      position: absolute;
+      top: 2px;
+      right: 3px;
+      font-size: 0.42rem;
+      color: #f5c542;
+      letter-spacing: 0.08em;
+      background: rgba(0, 0, 0, 0.65);
+      padding: 1px 3px;
+      border-radius: 3px;
+      font-weight: 700;
+    }
+    .reveal-entry .reveal-sac {
+      margin-top: 1px;
+      background: transparent;
+      border: 1px solid var(--line);
+      color: var(--ink-dim);
+      font-size: 0.45rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      border-radius: 3px;
+      padding: 2px 5px;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    .reveal-entry .reveal-sac:hover:not(:disabled) {
+      border-color: #e74c3c; color: #e74c3c;
+    }
+    .reveal-entry .reveal-sac:disabled { opacity: 0.3; cursor: not-allowed; }
+
+    .reveal-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      width: min(320px, 92vw);
+    }
+    .reveal-actions.single { grid-template-columns: 1fr; }
+
+    .sac-yield {
+      display: flex;
+      gap: 18px;
+      font-size: 0.7rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--ink-dim);
+    }
+    .sac-yield b { margin-right: 4px; font-size: 1rem; }
+    .sac-yield .yc b { color: #f5c542; }
+    .sac-yield .ys b { color: #27ae60; }
+    .btn-neutral {
+      background: transparent;
+      border: 1px solid var(--line-strong);
+      color: var(--ink);
+      border-radius: 6px;
+      padding: 10px;
+      font-family: inherit;
+      font-size: 0.65rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      cursor: pointer;
+    }
+    .btn-neutral.primary { border-color: #27ae60; color: #27ae60; }
+    .btn-neutral:hover:not(:disabled) { background: rgba(255, 255, 255, 0.03); }
+
+    /* ─── Forge ──────────────────────────────────────────────────────── */
+    .forge-screen {
+      justify-content: flex-start;
+      padding: 18px 16px;
+      gap: 14px;
+    }
+    .forge-countdown {
+      font-size: 0.62rem;
+      letter-spacing: 0.14em;
+      color: var(--ink-dim);
+      text-transform: uppercase;
+    }
+    .forge-roster {
+      width: min(340px, 92vw);
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+    }
+    .forge-card {
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid var(--line-strong);
+      border-radius: 8px;
+      padding: 10px 6px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      min-width: 0;
+      overflow: hidden;
+      box-sizing: border-box;
+    }
+    .forge-card canvas {
+      width: 100%;
+      max-width: 60px;
+      aspect-ratio: 1 / 1;
+      border-radius: 6px;
+    }
+    .forge-card .entry-label {
+      font-size: 0.55rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--ink);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 100%;
+    }
+    .forge-card .forge-cost {
+      font-size: 0.5rem;
+      color: #27ae60;
+      letter-spacing: 0.08em;
+      font-weight: 700;
+    }
+    .forge-card .forge-btn {
+      margin-top: 2px;
+      background: transparent;
+      border: 1px solid #27ae60;
+      color: #27ae60;
+      font-family: inherit;
+      font-size: 0.55rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      border-radius: 4px;
+      padding: 3px 10px;
+      cursor: pointer;
+    }
+    .forge-card .forge-btn:hover:not(:disabled) { background: rgba(39, 174, 96, 0.1); }
+    .forge-card .forge-btn:disabled {
+      border-color: var(--line);
+      color: var(--ink-dim);
+      cursor: not-allowed;
+      opacity: 0.5;
+    }
+
+    .forge-sheet-cost {
+      font-size: 0.7rem;
+      letter-spacing: 0.12em;
+      color: var(--ink-dim);
+      text-transform: uppercase;
+    }
+    .forge-sheet-cost b { color: #27ae60; margin: 0 4px; font-size: 1rem; }
+    .forge-sheet .sheet-actions .confirm {
+      border-color: #27ae60;
+      color: #27ae60;
+    }
+    .forge-sheet .sheet-actions .confirm:hover {
+      background: rgba(39, 174, 96, 0.1);
+    }
+
+    /* ─── Summary screen ─────────────────────────────────────────────── */
+    .summary {
+      position: fixed;
+      inset: 0;
+      background: #000;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      z-index: 25;
+      padding: 20px 16px;
+      gap: 14px;
+      overflow-y: auto;
+    }
+    .summary.show { display: flex; }
+
+    .summary-topbar {
+      width: 100%;
+      max-width: 360px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.65rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--ink-dim);
+    }
+    .summary-topbar b { color: var(--ink); font-weight: 600; }
+
+    .summary-score-block {
+      text-align: center;
+      margin-top: 4px;
+    }
+    .summary-score-block .mode {
+      font-size: 0.7rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--ink-dim);
+      margin-bottom: 4px;
+    }
+    .summary-score-block .big-score {
+      font-size: 3.2rem;
+      color: var(--accent);
+      font-weight: 700;
+      line-height: 1;
+    }
+    .summary-score-block .score-label {
+      font-size: 0.65rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--ink-dim);
+      margin-top: 4px;
+    }
+
+    .summary-board {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      grid-template-rows: repeat(3, 1fr);
+      gap: 6px;
+      width: min(240px, 70vw);
+      aspect-ratio: 1 / 1;
+    }
+    .summary-board .cell {
+      border: 1px dashed var(--line);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 6px;
+    }
+    .summary-board .cell canvas {
+      width: 100%;
+      height: 100%;
+      border-radius: 6px;
+    }
+
+    .summary-stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      grid-auto-rows: auto;
+      gap: 6px;
+      width: min(340px, 92vw);
+    }
+    .summary-stats .stat-cell.chips {
+      grid-column: 1 / -1;
+      flex-direction: row;
+      justify-content: space-between;
+      padding: 10px 14px;
+      border-style: solid;
+      border-color: #f5c542;
+    }
+    .summary-stats .stat-cell.chips .value { color: #f5c542; }
+    .summary-stats .stat-cell {
+      border: 1px dashed var(--line);
+      border-radius: 8px;
+      padding: 10px 4px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+    .summary-stats .stat-cell .label {
+      font-size: 0.55rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--ink-dim);
+    }
+    .summary-stats .stat-cell .value {
+      font-size: 1.1rem;
+      color: var(--ink);
+      font-weight: 700;
+    }
+
+    .summary-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      width: min(340px, 92vw);
+      margin-top: 4px;
+      margin-bottom: 12px;
+    }
+    .summary-actions button {
+      padding: 14px;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      font-weight: 700;
+      cursor: pointer;
+      color: #fff;
+    }
+    .summary-actions .btn-exit { background: #c0392b; }
+    .summary-actions .btn-play { background: #27ae60; }
+
+    /* ─── Deck Builder ───────────────────────────────────────────────── */
+    .deck-builder {
+      justify-content: flex-start;
+      padding: 18px 16px 20px;
+      gap: 14px;
+      overflow-y: auto;
+    }
+    .builder-title {
+      color: #27ae60;
+      font-size: 1.35rem;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      margin: 0;
+    }
+
+    .builder-slots {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      width: min(300px, 80vw);
+      aspect-ratio: 1 / 1;
+    }
+    .builder-slot {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 6px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      cursor: pointer;
+      transition: border-color 0.15s, background 0.15s;
+      background: rgba(255, 255, 255, 0.02);
+    }
+    .builder-slot canvas {
+      width: 100%;
+      max-width: 52px;
+      aspect-ratio: 1 / 1;
+      border-radius: 6px;
+    }
+    .builder-slot .slot-label {
+      font-size: 0.55rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--ink-dim);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 100%;
+    }
+    .builder-slot.selected {
+      border-color: #27ae60;
+      background: rgba(39, 174, 96, 0.08);
+    }
+    .builder-slot.selected .slot-label { color: #27ae60; }
+
+    .builder-layers {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      width: min(300px, 80vw);
+    }
+    .builder-layer {
+      background: transparent;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 10px 6px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      cursor: pointer;
+      color: var(--ink);
+      font-family: inherit;
+    }
+    .builder-layer .layer-title {
+      font-size: 0.55rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--ink-dim);
+    }
+    .builder-layer .layer-value {
+      font-size: 0.75rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--ink);
+    }
+    .builder-layer[data-layer="dice"] .layer-title { color: #27ae60; }
+    .builder-layer:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .builder-info {
+      text-align: center;
+      min-height: 44px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 4px;
+    }
+    .builder-die-name {
+      font-size: 1rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--ink);
+    }
+    .builder-die-flavor {
+      font-size: 0.7rem;
+      letter-spacing: 0.08em;
+      color: var(--ink-dim);
+      max-width: 300px;
+    }
+
+    .builder-actions {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 10px;
+      width: min(300px, 80vw);
+      align-items: center;
+    }
+    .builder-btn {
+      background: transparent;
+      border: 1px solid var(--line-strong);
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-family: inherit;
+      font-size: 0.85rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--ink);
+      cursor: pointer;
+    }
+    .builder-cancel { color: #c0392b; border-color: #c0392b; min-width: 48px; }
+    .builder-confirm { color: #27ae60; border-color: #27ae60; min-width: 48px; }
+    .builder-deck { text-align: center; }
+
+    /* ─── Collection browser ─────────────────────────────────────────── */
+    .collection-browser {
+      justify-content: flex-start;
+      padding: 18px 16px;
+      gap: 12px;
+      overflow: hidden;
+    }
+    .collection-topbar {
+      width: min(320px, 90vw);
+      display: grid;
+      grid-template-columns: 40px 1fr 40px;
+      align-items: center;
+    }
+    .collection-back {
+      background: transparent;
+      border: 1px solid var(--line-strong);
+      color: var(--ink);
+      border-radius: 6px;
+      width: 40px;
+      height: 34px;
+      font-size: 1rem;
+      cursor: pointer;
+      padding: 0;
+    }
+    .collection-counter {
+      text-align: center;
+      font-size: 0.7rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: #27ae60;
+    }
+    .collection-grid {
+      width: min(320px, 90vw);
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+      overflow-y: auto;
+      overflow-x: hidden;
+      flex: 1 1 auto;
+      padding-bottom: 10px;
+      box-sizing: border-box;
+    }
+    .collection-grid::-webkit-scrollbar { width: 6px; }
+    .collection-grid::-webkit-scrollbar-thumb { background: #27ae60; border-radius: 3px; }
+    .collection-entry {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 8px 4px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      cursor: pointer;
+      background: rgba(255, 255, 255, 0.02);
+      aspect-ratio: 1 / 1.1;
+      min-width: 0;
+      overflow: hidden;
+      box-sizing: border-box;
+    }
+    .collection-entry.current { border-color: #27ae60; background: rgba(39, 174, 96, 0.08); }
+    .collection-entry.locked { cursor: not-allowed; opacity: 0.55; }
+    .collection-entry canvas {
+      width: 100%;
+      max-width: 56px;
+      aspect-ratio: 1 / 1;
+      border-radius: 6px;
+    }
+    .collection-entry .entry-label {
+      font-size: 0.55rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--ink);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 100%;
+    }
+    .collection-entry.locked .entry-label { color: var(--ink-dim); }
+    .collection-entry.current .entry-label { color: #27ae60; }
+    .collection-silhouette {
+      width: 100%;
+      max-width: 56px;
+      aspect-ratio: 1 / 1;
+      border-radius: 6px;
+      background: #1a1a2e;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--ink-dim);
+      font-size: 1.1rem;
+      letter-spacing: 0.1em;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <div class="left">Score<b id="total-score">0</b></div>
+    <div class="center">Returns<b id="total-returns">0</b> / 100</div>
+    <div class="right">
+      <button class="burger" id="burger" aria-label="Menu">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </div>
+
+  <section class="board" id="board-section" aria-label="Board">
+    <span class="section-label">Board</span>
+  </section>
+
+  <section class="score" aria-label="Score">
+    <div class="stat"><span class="label">Face</span><span class="value" id="stat-face">—</span></div>
+    <div class="stat"><span class="label">Tile</span><span class="value" id="stat-tile">—</span></div>
+    <div class="stat"><span class="label">Power</span><span class="value" id="stat-power">—</span></div>
+    <div class="stat"><span class="label">Combo</span><span class="value" id="stat-combo">×1</span></div>
+    <div class="stat"><span class="label">Luck</span><span class="value" id="stat-luck">0</span></div>
+  </section>
+
+  <section class="hand" id="hand-section" aria-label="Hand">
+    <span class="section-label">Hand</span>
+  </section>
+
+  <canvas id="main-canvas"></canvas>
+
+  <!-- Name entry (first launch) -->
+  <div class="overlay" id="name-entry" style="background: #000;">
+    <h1>Dead Lucky</h1>
+    <h3>Enter your name</h3>
+    <input type="text" class="name-input" id="name-input" maxlength="16" autocomplete="off" spellcheck="false">
+    <button class="menu-btn primary" id="name-continue">Continue</button>
+  </div>
+
+  <!-- Home screen -->
+  <div class="overlay" id="home-screen" style="background: #000;">
+    <h1>Dead Lucky</h1>
+    <div class="home-user">Player<b id="home-username">—</b></div>
+    <div class="home-chips">Chips<b id="home-chips">0</b></div>
+    <button class="menu-btn primary" id="home-play">Play</button>
+    <button class="menu-btn" id="home-deck-builder">Deck Builder</button>
+    <button class="menu-btn" id="home-shrine">Shrine</button>
+    <button class="menu-btn" id="home-options">Options</button>
+  </div>
+
+  <!-- Mode carousel -->
+  <div class="overlay carousel-screen" id="mode-carousel" style="background: #000;">
+    <div class="shrine-topbar">
+      <button class="shrine-back" id="mode-back" aria-label="Back">←</button>
+      <span class="shrine-title">Select Mode</span>
+    </div>
+    <div class="carousel">
+      <button class="carousel-arrow prev" id="mode-prev" aria-label="Previous">‹</button>
+      <div class="carousel-track" id="mode-track"></div>
+      <button class="carousel-arrow next" id="mode-next" aria-label="Next">›</button>
+    </div>
+    <div class="carousel-dots" id="mode-dots"></div>
+    <button class="carousel-play" id="mode-continue">Continue</button>
+  </div>
+
+  <!-- Deck carousel -->
+  <div class="overlay carousel-screen" id="deck-carousel" style="background: #000;">
+    <div class="shrine-topbar">
+      <button class="shrine-back" id="deck-back" aria-label="Back">←</button>
+      <span class="shrine-title">Select Deck</span>
+    </div>
+    <div class="carousel">
+      <button class="carousel-arrow prev" id="deck-prev" aria-label="Previous">‹</button>
+      <div class="carousel-track" id="deck-track"></div>
+      <button class="carousel-arrow next" id="deck-next" aria-label="Next">›</button>
+    </div>
+    <div class="carousel-dots" id="deck-dots"></div>
+    <button class="carousel-play" id="deck-play">Play</button>
+  </div>
+
+  <!-- Shrine hub -->
+  <div class="overlay shrine-hub" id="shrine-hub" style="background: #000;">
+    <div class="shrine-topbar">
+      <button class="shrine-back" id="shrine-back" aria-label="Back">←</button>
+      <span class="shrine-title">Shrine</span>
+    </div>
+    <div class="currency-strip">
+      <div class="chip"><span>Chips</span><b class="js-chips">0</b></div>
+      <div class="shard"><span>Shards</span><b class="js-shards">0</b></div>
+    </div>
+    <div class="shrine-cards four">
+      <button class="shrine-card" id="shrine-summon">
+        <span class="card-title">Summon</span>
+        <span class="card-sub">200 chips · pull</span>
+      </button>
+      <button class="shrine-card" id="shrine-forge">
+        <span class="card-title">Forge</span>
+        <span class="card-sub" id="forge-sub">Resets 00:00:00</span>
+      </button>
+      <button class="shrine-card" id="shrine-sacrifice">
+        <span class="card-title">Sacrifice</span>
+        <span class="card-sub" id="sac-sub">0 dupes available</span>
+      </button>
+      <button class="shrine-card disabled" id="shrine-mystery" disabled>
+        <span class="card-title">?????</span>
+        <span class="card-sub">Coming Soon</span>
+      </button>
+    </div>
+    <button class="shrine-card wide" id="shrine-inventory">
+      <span class="card-title">Inventory</span>
+      <span class="card-sub" id="inv-sub">0 dice held</span>
+    </button>
+    <button class="dev-btn" id="dev-grant-chips">Dev · +1000 chips</button>
+  </div>
+
+  <!-- Deck Builder -->
+  <div class="overlay deck-builder" id="deck-builder" style="background: #000;">
+    <h1 class="builder-title">Deck Builder</h1>
+    <div class="builder-slots" id="builder-slots"></div>
+    <div class="builder-layers">
+      <button class="builder-layer" data-layer="skin" id="layer-skin">
+        <span class="layer-title">Skin</span>
+        <span class="layer-value">Default</span>
+      </button>
+      <button class="builder-layer" data-layer="dice" id="layer-dice">
+        <span class="layer-title">Dice</span>
+        <span class="layer-value">—</span>
+      </button>
+      <button class="builder-layer" data-layer="aura" id="layer-aura">
+        <span class="layer-title">Aura</span>
+        <span class="layer-value">None</span>
+      </button>
+    </div>
+    <div class="builder-info">
+      <div class="builder-die-flavor" id="builder-die-flavor"></div>
+    </div>
+    <div class="builder-actions">
+      <button class="builder-btn builder-cancel" id="builder-cancel" aria-label="Cancel">✕</button>
+      <button class="builder-btn builder-deck" id="builder-deck">Deck 1</button>
+      <button class="builder-btn builder-confirm" id="builder-confirm" aria-label="Save">✓</button>
+    </div>
+  </div>
+
+  <!-- Forge screen -->
+  <div class="overlay forge-screen" id="forge-screen" style="background: #000;">
+    <div class="shrine-topbar">
+      <button class="shrine-back" id="forge-back" aria-label="Back">←</button>
+      <span class="shrine-title">Forge</span>
+    </div>
+    <div class="currency-strip">
+      <div class="chip"><span>Chips</span><b class="js-chips">0</b></div>
+      <div class="shard"><span>Shards</span><b class="js-shards">0</b></div>
+    </div>
+    <div class="forge-countdown" id="forge-countdown">Resets 00:00:00</div>
+    <div class="forge-roster" id="forge-roster"></div>
+  </div>
+
+  <!-- Forge confirm sheet -->
+  <div class="overlay sacrifice-sheet forge-sheet" id="forge-sheet">
+    <div class="sheet-card">
+      <div class="sheet-title" id="forge-sheet-title">Forge —</div>
+      <div class="forge-sheet-cost">Cost<b id="forge-sheet-cost">60</b>shards</div>
+      <div class="sheet-actions">
+        <button id="forge-sheet-cancel">Cancel</button>
+        <button class="confirm" id="forge-sheet-confirm">Forge</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Summon screen -->
+  <div class="overlay summon-screen" id="summon-screen" style="background: #000;">
+    <div class="shrine-topbar">
+      <button class="shrine-back" id="summon-back" aria-label="Back">←</button>
+      <span class="shrine-title">Summon</span>
+    </div>
+    <div class="currency-strip">
+      <div class="chip"><span>Chips</span><b class="js-chips">0</b></div>
+      <div class="shard"><span>Shards</span><b class="js-shards">0</b></div>
+    </div>
+    <div class="summon-actions">
+      <button class="summon-btn" id="summon-single">
+        <span class="btn-title">Summon ×1</span>
+        <span class="btn-cost">200 chips</span>
+      </button>
+      <button class="summon-btn" id="summon-ten">
+        <span class="btn-title">Summon ×10</span>
+        <span class="btn-cost">2000 chips</span>
+      </button>
+    </div>
+    <div class="summon-note">All 17 dice · flat odds</div>
+  </div>
+
+  <!-- One-at-a-time reveal (with rotating 3D die) -->
+  <div class="overlay reveal-screen" id="reveal-single" style="background: #000;">
+    <div class="shrine-topbar">
+      <span class="shrine-title" id="reveal-single-title">Summoned</span>
+    </div>
+    <div class="currency-strip">
+      <div class="chip"><span>Chips</span><b class="js-chips">0</b></div>
+      <div class="shard"><span>Shards</span><b class="js-shards">0</b></div>
+    </div>
+    <div class="reveal-single-stage">
+      <canvas id="reveal-canvas"></canvas>
+    </div>
+    <div class="reveal-single-info">
+      <div class="entry-label" id="reveal-single-name">—</div>
+      <div class="new-tag" id="reveal-single-new" style="display:none;">NEW</div>
+    </div>
+    <div class="reveal-actions dual">
+      <button class="btn-neutral" id="reveal-skip">Skip</button>
+      <button class="btn-neutral primary" id="reveal-next">Next</button>
+    </div>
+  </div>
+
+  <!-- Reveal screen -->
+  <div class="overlay reveal-screen" id="reveal-screen" style="background: #000;">
+    <div class="shrine-topbar">
+      <span class="shrine-title">Summoned</span>
+    </div>
+    <div class="currency-strip">
+      <div class="chip"><span>Chips</span><b class="js-chips">0</b></div>
+      <div class="shard"><span>Shards</span><b class="js-shards">0</b></div>
+    </div>
+    <div class="reveal-grid" id="reveal-grid"></div>
+    <div class="reveal-actions single">
+      <button class="btn-neutral primary" id="reveal-continue">Continue</button>
+    </div>
+  </div>
+
+  <!-- Sacrifice screen -->
+  <div class="overlay summon-screen" id="sacrifice-screen" style="background: #000;">
+    <div class="shrine-topbar">
+      <button class="shrine-back" id="sacrifice-back" aria-label="Back">←</button>
+      <span class="shrine-title">Sacrifice</span>
+    </div>
+    <div class="currency-strip">
+      <div class="chip"><span>Chips</span><b class="js-chips">0</b></div>
+      <div class="shard"><span>Shards</span><b class="js-shards">0</b></div>
+    </div>
+    <div class="summon-actions">
+      <button class="summon-btn" id="sacrifice-single">
+        <span class="btn-title">Sacrifice ×1</span>
+        <span class="btn-cost" id="sacrifice-single-yield">+50c +6s</span>
+      </button>
+      <button class="summon-btn" id="sacrifice-ten">
+        <span class="btn-title">Sacrifice ×10</span>
+        <span class="btn-cost" id="sacrifice-ten-yield">+500c +60s</span>
+      </button>
+    </div>
+    <div class="summon-note" id="sacrifice-pool">0 dupes available</div>
+  </div>
+
+  <!-- Sacrifice result screen -->
+  <div class="overlay reveal-screen" id="sacrifice-result" style="background: #000;">
+    <div class="shrine-topbar">
+      <span class="shrine-title">Sacrificed</span>
+    </div>
+    <div class="currency-strip">
+      <div class="chip"><span>Chips</span><b class="js-chips">0</b></div>
+      <div class="shard"><span>Shards</span><b class="js-shards">0</b></div>
+    </div>
+    <div class="sac-yield">
+      <span class="yc">+<b id="sac-yield-chips">0</b>chips</span>
+      <span class="ys">+<b id="sac-yield-shards">0</b>shards</span>
+    </div>
+    <div class="reveal-grid" id="sacrifice-grid"></div>
+    <div class="reveal-actions single">
+      <button class="btn-neutral primary" id="sacrifice-continue">Continue</button>
+    </div>
+  </div>
+
+  <!-- Inventory browser -->
+  <div class="overlay collection-browser inventory-browser" id="inventory-browser" style="background: #000;">
+    <div class="collection-topbar">
+      <button class="collection-back" id="inv-back" aria-label="Back">←</button>
+      <span class="collection-counter" id="inv-counter">0 dice</span>
+      <span class="collection-spacer"></span>
+    </div>
+    <div class="currency-strip">
+      <div class="chip"><span>Chips</span><b class="js-chips">0</b></div>
+      <div class="shard"><span>Shards</span><b class="js-shards">0</b></div>
+    </div>
+    <div class="collection-grid" id="inventory-grid"></div>
+  </div>
+
+  <!-- Sacrifice sheet -->
+  <div class="overlay sacrifice-sheet" id="sacrifice-sheet">
+    <div class="sheet-card">
+      <div class="sheet-title" id="sheet-title">Sacrifice —</div>
+      <div class="sheet-stepper">
+        <button id="sheet-minus">−</button>
+        <span class="sheet-qty" id="sheet-qty">1</span>
+        <button id="sheet-plus">+</button>
+      </div>
+      <div class="sheet-yield">
+        <span class="yc">+<b id="sheet-chips">0</b>chips</span>
+        <span class="ys">+<b id="sheet-shards">0</b>shards</span>
+      </div>
+      <div class="sheet-actions">
+        <button id="sheet-cancel">Cancel</button>
+        <button class="confirm" id="sheet-confirm">Sacrifice</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Collection browser -->
+  <div class="overlay collection-browser" id="collection-browser" style="background: #000;">
+    <div class="collection-topbar">
+      <button class="collection-back" id="collection-back" aria-label="Back">←</button>
+      <span class="collection-counter" id="collection-counter">1 / 17</span>
+      <span class="collection-spacer"></span>
+    </div>
+    <div class="collection-grid" id="collection-grid"></div>
+  </div>
+
+  <!-- Skin browser -->
+  <div class="overlay collection-browser" id="skin-browser" style="background: #000;">
+    <div class="collection-topbar">
+      <button class="collection-back" id="skin-back" aria-label="Back">←</button>
+      <span class="collection-counter">Skin</span>
+      <span class="collection-spacer"></span>
+    </div>
+    <div class="collection-grid" id="skin-grid"></div>
+  </div>
+
+  <!-- Summary screen -->
+  <div class="summary" id="summary-screen">
+    <div class="summary-topbar">
+      <span>Player<b id="summary-username">—</b></span>
+      <span>Resets in<b id="summary-countdown">00:00:00</b></span>
+    </div>
+    <div class="summary-score-block">
+      <div class="mode">Standard League</div>
+      <div class="big-score" id="summary-score">0</div>
+      <div class="score-label">Score</div>
+    </div>
+    <div class="summary-board" id="summary-board"></div>
+    <div class="summary-stats">
+      <div class="stat-cell"><span class="label">Returns</span><span class="value" id="sum-returns">0</span></div>
+      <div class="stat-cell"><span class="label">Rolls</span><span class="value" id="sum-rolls">0</span></div>
+      <div class="stat-cell"><span class="label">Luck</span><span class="value" id="sum-luck">0</span></div>
+      <div class="stat-cell"><span class="label">Matches</span><span class="value" id="sum-matches">0</span></div>
+      <div class="stat-cell"><span class="label">Combos</span><span class="value" id="sum-combos">0</span></div>
+      <div class="stat-cell"><span class="label">Triggers</span><span class="value" id="sum-triggers">0</span></div>
+      <div class="stat-cell chips"><span class="label">Chips</span><span class="value" id="sum-chips">0</span></div>
+    </div>
+    <div class="summary-actions">
+      <button class="btn-exit" id="summary-exit">Exit</button>
+      <button class="btn-play" id="summary-play">Play</button>
+    </div>
+  </div>
+
+  <!-- Main in-game menu -->
+  <div class="overlay" id="menu-main">
+    <h3>Menu</h3>
+    <button class="menu-btn" id="menu-return">Return</button>
+    <button class="menu-btn" id="menu-restart">Restart</button>
+    <button class="menu-btn" id="menu-options">Options</button>
+    <button class="menu-btn" id="menu-quit">Quit</button>
+  </div>
+
+  <!-- Options submenu -->
+  <div class="overlay" id="menu-options-panel">
+    <h3>Options</h3>
+    <div class="slider-row">
+      <div class="slider-label"><span>Music</span><b id="val-music">80</b></div>
+      <input type="range" min="0" max="100" value="80" id="slider-music">
+    </div>
+    <div class="slider-row">
+      <div class="slider-label"><span>SFX</span><b id="val-sfx">80</b></div>
+      <input type="range" min="0" max="100" value="80" id="slider-sfx">
+    </div>
+    <div class="slider-row">
+      <div class="slider-label"><span>VO</span><b id="val-vo">80</b></div>
+      <input type="range" min="0" max="100" value="80" id="slider-vo">
+    </div>
+    <button class="menu-btn danger" id="options-logout">Log Out</button>
+    <button class="menu-btn" id="options-back">Back</button>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+  <script>
+  // ─── Constants ────────────────────────────────────────────────────────
+  const N = 9;
+  const RETURN_CAP     = 100;
+  const POWER          = 0;   // placeholder until die types exist
+  const MATCH_FACE     = 9;
+  const COMBO_BASE     = 1;
+  const COMBO_MATCH    = 1;
+  const COMBO_TRIPLE   = 3;
+  const COMBO_STRAIGHT = 3;
+
+  const LINES = [
+    [0,1,2], [3,4,5], [6,7,8],   // rows
+    [0,3,6], [1,4,7], [2,5,8],   // cols
+    [0,4,8], [2,4,6],            // diagonals
+  ];
+  const lineKey = line => line.join(',');
+  const LINE_BY_KEY = {};
+  LINES.forEach(l => LINE_BY_KEY[lineKey(l)] = l);
+  const activeComboLines = new Set();
+
+  // 8-direction neighbour indices on the 3×3 board (for Sun / Moon).
+  const NEIGHBOURS = (() => {
+    const out = [];
+    for (let i = 0; i < N; i++) {
+      const r = Math.floor(i / 3), c = i % 3;
+      const ns = [];
+      for (let dr = -1; dr <= 1; dr++) {
+        for (let dc = -1; dc <= 1; dc++) {
+          if (dr === 0 && dc === 0) continue;
+          const rr = r + dr, cc = c + dc;
+          if (rr < 0 || rr > 2 || cc < 0 || cc > 2) continue;
+          ns.push(rr * 3 + cc);
+        }
+      }
+      out.push(ns);
+    }
+    return out;
+  })();
+
+  // Effective face used for line checks: matched dice LITERALLY become 9
+  const effectiveFace = die => die.isMatch ? MATCH_FACE : die.rolledFace;
+
+  // A straight requires the three dice to be in consecutive sequence along
+  // the line — either ascending (2,3,4) or descending (4,3,2). Order on the
+  // board matters: 3,2,4 is NOT a straight even though those values could
+  // sort to one. No wrap-around (5,6,1 / 6,1,2 are out).
+  function isStraightFaces(faces) {
+    const [a, b, c] = faces;
+    return (b === a + 1 && c === b + 1)   // ascending
+        || (b === a - 1 && c === b - 1);  // descending
+  }
+  function isTripleFaces(faces) {
+    return faces[0] === faces[1] && faces[1] === faces[2];
+  }
+
+  // ─── State ────────────────────────────────────────────────────────────
+  const tiles = Array.from({length: N}, () => 1 + Math.floor(Math.random() * 6));
+  const dice  = [];
+  const hand  = Array(N).fill(null);
+  const board = Array(N).fill(null);
+
+  const game = {
+    luck: 0,
+    totalScore: 0,
+    totalReturns: 0,
+    rolls: 0,
+    matches: 0,
+    combos: 0,
+    triggers: 0,   // stays 0 until die powers exist
+    selectedDie: null,
+    rolledDie: null,
+    inspectedTile: null,
+    ended: false,
+    animating: 0,
+    paused: false,   // true when any overlay is open
+    session: { lastRolledFace: null, perDie: {} },
+  };
+
+  // Audio config — kept in memory, hooked to real audio later
+  const audioConfig = { music: 80, sfx: 80, vo: 80 };
+
+  // Persisted player name
+  const USERNAME_KEY = 'dl_username';
+  let username = localStorage.getItem(USERNAME_KEY) || '';
+
+  // ─── Die type registry ────────────────────────────────────────────────
+  // Hooks (onRoll / onPlace / onScore / onReturn) mutate a ctx object. onRoll
+  // is broadcast to every die after the random face is picked; each hook
+  // checks `ctx.self === ctx.rolling` to decide whether it's the one rolling.
+  // Moth is the lone "passive listener" that fires on anyone's roll.
+  const DIE_TYPES = {
+    plain:    { id: 'plain',    name: 'Plain',     color: 0xf0ede8, badge: '',    flavor: 'Just a normal die.' },
+    lucky:    { id: 'lucky',    name: 'Lucky',     color: 0xf5c542, badge: 'LCK', flavor: '+1 luck on roll.',
+                onRoll: ctx => {
+                  if (ctx.self !== ctx.rolling) return;
+                  ctx.game.luck += 1;
+                  ctx.fired = true;
+                }},
+    moth:     { id: 'moth',     name: 'Moth',      color: 0xc28de0, badge: 'MTH', flavor: '+1 power when any die rolls.',
+                onRoll: ctx => {
+                  ctx.self.state.power += 1;
+                  ctx.fired = true;
+                }},
+    flight:   { id: 'flight',   name: 'Flight',    color: 0x8fd4ef, badge: 'FLT', flavor: 'Always returns unless alone.' },
+    sun:      { id: 'sun',      name: 'Sun',       color: 0xff9a3c, badge: 'SUN', flavor: '+5 power per filled neighbour.',
+                onPlace: ctx => {
+                  let filled = 0;
+                  for (const n of NEIGHBOURS[ctx.tileIdx]) {
+                    if (ctx.board[n] != null) filled++;
+                  }
+                  if (filled > 0) {
+                    ctx.die.state.power += 5 * filled;
+                    ctx.fired = true;
+                  }
+                }},
+    moon:     { id: 'moon',     name: 'Moon',      color: 0xcdd7ea, badge: 'MON', flavor: '+5 power per empty neighbour.',
+                onPlace: ctx => {
+                  let empty = 0;
+                  for (const n of NEIGHBOURS[ctx.tileIdx]) {
+                    if (ctx.board[n] == null) empty++;
+                  }
+                  if (empty > 0) {
+                    ctx.die.state.power += 5 * empty;
+                    ctx.fired = true;
+                  }
+                }},
+    angel:    { id: 'angel',    name: 'Angel',     color: 0xfff0a0, badge: 'ANG', flavor: '+1 power per die in hand on roll.',
+                onRoll: ctx => {
+                  if (ctx.self !== ctx.rolling) return;
+                  // "excluding Angel itself" — Angel has conceptually left the hand.
+                  let filledOthers = 0;
+                  for (let i = 0; i < ctx.hand.length; i++) {
+                    if (ctx.hand[i] != null && ctx.hand[i] !== ctx.rolling.id) filledOthers++;
+                  }
+                  ctx.self.state.power = filledOthers;
+                  ctx.fired = true;
+                }},
+    demon:    { id: 'demon',    name: 'Demon',     color: 0xd15555, badge: 'DMN', flavor: '+1 power per empty hand spot on roll.',
+                onRoll: ctx => {
+                  if (ctx.self !== ctx.rolling) return;
+                  // Rolling die's slot counts as empty (the die is "up in the air").
+                  let emptySlots = 1;
+                  for (let i = 0; i < ctx.hand.length; i++) {
+                    if (ctx.hand[i] == null) emptySlots++;
+                  }
+                  ctx.self.state.power = emptySlots;
+                  ctx.fired = true;
+                }},
+    reaper:   { id: 'reaper',   name: 'Reaper',    color: 0x909098, badge: 'RPR', flavor: 'Returns a random board die on roll.',
+                onRoll: ctx => {
+                  if (ctx.self !== ctx.rolling) return;
+                  const filled = [];
+                  for (let i = 0; i < ctx.board.length; i++) {
+                    if (ctx.board[i] != null) filled.push(i);
+                  }
+                  if (filled.length === 0) return;  // empty board → no-op
+                  const slot = filled[Math.floor(Math.random() * filled.length)];
+                  ctx.deferred.push({ type: 'reap', boardSlot: slot, dieId: ctx.board[slot] });
+                  ctx.fired = true;
+                }},
+    copycat:  { id: 'copycat',  name: 'Copycat',   color: 0x7fcc8b, badge: 'CPY', flavor: 'Copies the last face rolled.',
+                onRoll: ctx => {
+                  if (ctx.self !== ctx.rolling) return;
+                  if (ctx.session.lastRolledFace != null) {
+                    ctx.face = ctx.session.lastRolledFace;
+                    ctx.fired = true;
+                  }
+                }},
+    dagger:   { id: 'dagger',   name: 'Dagger',    color: 0x7e98be, badge: 'DGR', flavor: 'Rolls a 1 or a 6.',
+                onRoll: ctx => {
+                  if (ctx.self !== ctx.rolling) return;
+                  ctx.face = Math.random() < 0.5 ? 1 : 6;
+                  ctx.fired = true;
+                }},
+    sniper:   { id: 'sniper',   name: 'Sniper',    color: 0xff6060, badge: 'SNP', flavor: '+50 points when matched.',
+                onScore: ctx => {
+                  if (ctx.isMatch) {
+                    ctx.flatBonus += 50;
+                    ctx.fired = true;
+                  }
+                }},
+    gambler:  { id: 'gambler',  name: 'Gambler',   color: 0xe074bd, badge: 'GMB', flavor: 'Evens on even luck, odds on odd.',
+                onRoll: ctx => {
+                  if (ctx.self !== ctx.rolling) return;
+                  const pool = (ctx.game.luck % 2 === 0) ? [2, 4, 6] : [1, 3, 5];
+                  ctx.face = pool[Math.floor(Math.random() * pool.length)];
+                  ctx.fired = true;
+                }},
+    vampire:  { id: 'vampire',  name: 'Vampire',   color: 0xa84560, badge: 'VMP', flavor: 'Face grows by tile on placement.',
+                onPlace: ctx => {
+                  const boosted = Math.min(ctx.die.rolledFace + ctx.tile, 6);
+                  if (boosted !== ctx.die.rolledFace) {
+                    ctx.die.rolledFace = boosted;
+                    ctx.die.face       = boosted;
+                    showFace(ctx.die, boosted);
+                    ctx.fired = true;
+                  }
+                }},
+    lostLove: { id: 'lostLove', name: 'Lost Love', color: 0xf0b4c4, badge: 'LVE', flavor: 'Cannot trigger a match.',
+                suppressMatch: true },
+    snake:    { id: 'snake',    name: 'Snake',     color: 0x8fb866, badge: 'SNK', flavor: '+1 combo on straights.',
+                onScore: ctx => {
+                  if (ctx.inStraight) {
+                    ctx.combo += 1;
+                    ctx.fired = true;
+                  }
+                }},
+    trinity:  { id: 'trinity',  name: 'Trinity',   color: 0x6f8ed2, badge: 'TRI', flavor: '+1 combo on triples.',
+                onScore: ctx => {
+                  if (ctx.inTriple) {
+                    ctx.combo += 1;
+                    ctx.fired = true;
+                  }
+                }},
+  };
+  // Catalog order — starter collection = first 9.
+  const DIE_TYPE_ORDER = [
+    'plain', 'lucky', 'moth', 'flight', 'sun', 'moon', 'angel', 'demon', 'reaper',
+    'copycat', 'dagger', 'sniper', 'gambler', 'vampire', 'lostLove', 'snake', 'trinity',
+  ];
+  const STARTER_COLLECTION = DIE_TYPE_ORDER.slice(0, 9);
+
+  // ─── Skins ────────────────────────────────────────────────────────────
+  // A "skin" is a folder of pre-baked face PNGs. Files are stored under
+  //   DICE_SKINS/<SKIN_ID_UPPERCASE>/
+  //     FACE_1.png … FACE_6.png   (rolled faces, pips already baked in)
+  //     FACE_9.png                (match state)
+  //     <DIE_TYPE>.png            (trait/idle icon shown on face 1 at rest;
+  //                                filename matches die type id, uppercase)
+  // Each skin's PNGs assume a neutral background so the runtime die tint
+  // (material.color in 3D, multiply blend in 2D) lands cleanly on top.
+  const SKINS = {
+    plain: { id: 'plain', name: 'Plain' },
+  };
+  const SKIN_ORDER = ['plain'];
+  const DEFAULT_SKIN = 'plain';
+
+  // ─── Deck / collection persistence ────────────────────────────────────
+  const COLLECTION_KEY  = 'dl_collection';         // legacy: array of owned typeIds
+  const INVENTORY_KEY   = 'dl_inventory';          // current: { typeId: count }
+  const DECKS_KEY       = 'dl_decks';
+  const ACTIVE_DECK_KEY = 'dl_active_deck';
+  const CHIPS_KEY       = 'dl_chips';
+  const SHARDS_KEY      = 'dl_shards';
+  const FORGE_ROSTER_KEY = 'dl_forge_roster';
+  const DECK_SKINS_KEY   = 'dl_deck_skins';
+
+  // Economy constants
+  const SUMMON_COST_SINGLE = 200;
+  const SUMMON_COST_TEN    = 2000;
+  const SACRIFICE_CHIPS    = 50;
+  const SACRIFICE_SHARDS   = 6;
+  const FORGE_COST_SHARDS  = 60;
+  const FORGE_ROSTER_SIZE  = 3;
+  // Dev seed: give a generous chip balance until rank payouts exist.
+  const DEV_CHIP_FLOOR     = 2000;
+
+  function loadJSON(key, fallback) {
+    try {
+      const raw = localStorage.getItem(key);
+      return raw == null ? fallback : JSON.parse(raw);
+    } catch (e) {
+      return fallback;
+    }
+  }
+  const saveJSON = (key, val) => localStorage.setItem(key, JSON.stringify(val));
+
+  // Inventory is a { typeId: count } map. Migrate from legacy array if needed.
+  let inventory = loadJSON(INVENTORY_KEY, null);
+  if (!inventory || typeof inventory !== 'object' || Array.isArray(inventory)) {
+    const legacy = loadJSON(COLLECTION_KEY, null);
+    inventory = {};
+    const seed = Array.isArray(legacy) && legacy.length ? legacy : STARTER_COLLECTION;
+    seed.forEach(typeId => { if (DIE_TYPES[typeId]) inventory[typeId] = (inventory[typeId] || 0) + 1; });
+    saveJSON(INVENTORY_KEY, inventory);
+  }
+
+  const ownsDie = typeId => (inventory[typeId] || 0) > 0;
+  const dieCount = typeId => inventory[typeId] || 0;
+  function addToInventory(typeId, n = 1) {
+    inventory[typeId] = (inventory[typeId] || 0) + n;
+    saveJSON(INVENTORY_KEY, inventory);
+  }
+  function removeFromInventory(typeId, n = 1) {
+    const next = (inventory[typeId] || 0) - n;
+    inventory[typeId] = Math.max(0, next);
+    saveJSON(INVENTORY_KEY, inventory);
+  }
+
+  let decks = loadJSON(DECKS_KEY, null);
+  if (!Array.isArray(decks) || decks.length !== 3) {
+    decks = [0, 1, 2].map(() => [...STARTER_COLLECTION]);
+    saveJSON(DECKS_KEY, decks);
+  }
+
+  let deckSkins = loadJSON(DECK_SKINS_KEY, null);
+  if (!Array.isArray(deckSkins) || deckSkins.length !== 3) {
+    deckSkins = [0, 1, 2].map(() => new Array(N).fill(DEFAULT_SKIN));
+    saveJSON(DECK_SKINS_KEY, deckSkins);
+  } else {
+    // Validate every saved id against the current SKINS catalog. Any value
+    // we don't recognize (legacy skin ids, typos, nulls) collapses to the
+    // default skin so we never try to load a missing folder at runtime.
+    deckSkins = deckSkins.map(d => {
+      const out = new Array(N).fill(DEFAULT_SKIN);
+      if (Array.isArray(d)) for (let i = 0; i < N; i++) {
+        const s = d[i];
+        out[i] = (s && SKINS[s]) ? s : DEFAULT_SKIN;
+      }
+      return out;
+    });
+    saveJSON(DECK_SKINS_KEY, deckSkins);
+  }
+
+  let activeDeckIdx = loadJSON(ACTIVE_DECK_KEY, null);
+  if (activeDeckIdx !== 0 && activeDeckIdx !== 1 && activeDeckIdx !== 2) {
+    activeDeckIdx = 0;
+    saveJSON(ACTIVE_DECK_KEY, activeDeckIdx);
+  }
+
+  let chips = loadJSON(CHIPS_KEY, null);
+  if (typeof chips !== 'number') chips = 0;
+  if (chips < DEV_CHIP_FLOOR) chips = DEV_CHIP_FLOOR;  // dev seed
+  saveJSON(CHIPS_KEY, chips);
+
+  let shards = loadJSON(SHARDS_KEY, null);
+  if (typeof shards !== 'number') shards = 0;
+  saveJSON(SHARDS_KEY, shards);
+
+  function setChips(n)  { chips  = Math.max(0, n | 0); saveJSON(CHIPS_KEY, chips);   refreshCurrencyUI(); }
+  function setShards(n) { shards = Math.max(0, n | 0); saveJSON(SHARDS_KEY, shards); refreshCurrencyUI(); }
+
+  const currentDeck = () => decks[activeDeckIdx];
+  const currentDeckSkins = () => deckSkins[activeDeckIdx];
+
+  // ─── DOM construction ─────────────────────────────────────────────────
+  const boardSection = document.getElementById('board-section');
+  const handSection  = document.getElementById('hand-section');
+
+  const tileEls = [];
+  for (let i = 0; i < N; i++) {
+    const t = document.createElement('div');
+    t.className = 'tile';
+    t.innerHTML = `<div class="tile-value">${tiles[i]}</div><div class="tile-score"></div>`;
+    t.addEventListener('click', () => onBoardTap(i));
+    boardSection.appendChild(t);
+    tileEls.push(t);
+  }
+
+  const slotEls = [];
+  const slotBadges = [];
+  for (let i = 0; i < N; i++) {
+    const s = document.createElement('div');
+    s.className = 'slot';
+    const badge = document.createElement('span');
+    badge.className = 'slot-badge';
+    s.appendChild(badge);
+    s.addEventListener('click', () => onHandTap(i));
+    handSection.appendChild(s);
+    slotEls.push(s);
+    slotBadges.push(badge);
+  }
+
+  function refreshSlotBadge(slotIdx) {
+    const badge = slotBadges[slotIdx];
+    const dieId = hand[slotIdx];
+    if (dieId == null) { badge.className = 'slot-badge'; badge.textContent = ''; return; }
+    const type = dice[dieId].type;
+    const text = type && type.badge ? type.badge : '';
+    const color = type && type.color != null ? type.color : 0xffffff;
+    badge.textContent = text;
+    badge.style.background = text ? '#' + color.toString(16).padStart(6, '0') : '';
+    badge.className = 'slot-badge' + (text ? ' show' : '');
+  }
+  function refreshAllSlotBadges() {
+    for (let i = 0; i < N; i++) refreshSlotBadge(i);
+  }
+
+  const statFace    = document.getElementById('stat-face');
+  const statTile    = document.getElementById('stat-tile');
+  const statPower   = document.getElementById('stat-power');
+  const statCombo   = document.getElementById('stat-combo');
+  const statLuck    = document.getElementById('stat-luck');
+  const scoreEl     = document.getElementById('total-score');
+  const returnsEl   = document.getElementById('total-returns');
+
+  // ─── Three.js setup ───────────────────────────────────────────────────
+  const canvas   = document.getElementById('main-canvas');
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+  const scene  = new THREE.Scene();
+  const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 1000);
+  camera.position.set(0, 0, 100);
+  camera.lookAt(0, 0, 0);
+
+  scene.add(new THREE.AmbientLight(0xffffff, 0.65));
+  const keyLight = new THREE.DirectionalLight(0xffffff, 0.85);
+  keyLight.position.set(2, 4, 5);
+  scene.add(keyLight);
+  const fillLight = new THREE.DirectionalLight(0x8888ff, 0.22);
+  fillLight.position.set(-2, -1, 3);
+  scene.add(fillLight);
+
+  // ─── Skin texture loader ──────────────────────────────────────────────
+  // Every face texture is a pre-baked PNG on disk under DICE_SKINS/<SKIN>/.
+  // We load them lazily through a single shared cache so each PNG hits the
+  // disk once even when many dice share a skin. The cache stores both:
+  //   • a THREE.Texture (for the 3D mesh's MeshStandardMaterial.map)
+  //   • an HTMLImageElement (for 2D canvas previews in the deck builder /
+  //     summary board / reveal screens — which can't share THREE textures)
+  // This replaces the prior shader-injection skin overlay. Pre-baked PNGs
+  // mean: no canvas tainting on file://, no onBeforeCompile, no uniform
+  // plumbing — just a plain `m.map = tex` swap, the same pattern Three.js
+  // itself recommends for changing a material's texture.
+  const SKIN_TEX = {};   // skinId -> { 'FACE_1': THREE.Texture, … }
+  const SKIN_IMG = {};   // skinId -> { 'FACE_1': HTMLImageElement, … }
+  const _imgRedrawCbs = new WeakMap(); // img -> Set<callback> (for 2D previews)
+
+  function _skinKey(k) { return String(k).toUpperCase(); }
+  function skinFaceUrl(skinId, key) {
+    return `DICE_SKINS/${skinId.toUpperCase()}/${_skinKey(key)}.png`;
+  }
+
+  // Returns a THREE.Texture for (skinId, key). Triggers a load on first
+  // request. The loader sets needsUpdate when bytes arrive so the running
+  // material picks up the pixels without us having to listen.
+  //
+  // Why we DON'T use THREE.TextureLoader: on file:// it sets
+  // crossOrigin='anonymous' which causes the loaded image to be flagged
+  // tainted for WebGL upload → black textures. A bare `new Image()` with
+  // no crossOrigin attribute is treated as same-origin to a file:// page
+  // and uploads to WebGL cleanly. Same root cause as the old canvas-
+  // tainting bug, just via a different code path.
+  //
+  // Missing-file fallback: if the PNG 404s (most often a trait file that
+  // hasn't been baked yet), we re-point the same Texture object at
+  // FACE_1.png so any material already bound to it picks up the fallback.
+  function _configureTex(t) {
+    if (THREE.SRGBColorSpace) t.colorSpace = THREE.SRGBColorSpace;
+    t.anisotropy = 4;
+    t.needsUpdate = true;
+  }
+  function _loadImageInto(tex, url, onFail) {
+    const img = new Image();
+    img.onload  = () => { tex.image = img; _configureTex(tex); };
+    img.onerror = () => { if (onFail) onFail(); };
+    img.src = url;
+  }
+  function getSkinTex(skinId, key) {
+    const id = skinId || DEFAULT_SKIN;
+    const k  = _skinKey(key);
+    if (!SKIN_TEX[id]) SKIN_TEX[id] = {};
+    const slot = SKIN_TEX[id];
+    if (slot[k]) return slot[k];
+    const tex = new THREE.Texture();
+    if (THREE.SRGBColorSpace) tex.colorSpace = THREE.SRGBColorSpace;
+    tex.anisotropy = 4;
+    slot[k] = tex;
+    const url = skinFaceUrl(id, k);
+    _loadImageInto(tex, url, () => {
+      if (k === 'FACE_1') {
+        console.warn('Skin texture failed (no fallback):', url);
+        return;
+      }
+      console.warn('Skin texture missing, using FACE_1:', url);
+      _loadImageInto(tex, skinFaceUrl(id, 'FACE_1'));
+    });
+    return tex;
+  }
+
+  // Returns the same PNG as an HTMLImageElement for 2D canvas previews.
+  // The 2D draw path schedules a re-render once the image finishes loading
+  // so builder tiles don't stay blank on first paint.
+  function getSkinImg(skinId, key) {
+    const id = skinId || DEFAULT_SKIN;
+    const k  = _skinKey(key);
+    if (!SKIN_IMG[id]) SKIN_IMG[id] = {};
+    const slot = SKIN_IMG[id];
+    if (slot[k]) return slot[k];
+    const img = new Image();
+    img.addEventListener('load', () => {
+      const cbs = _imgRedrawCbs.get(img);
+      if (cbs) { cbs.forEach(fn => { try { fn(); } catch (e) {} }); cbs.clear(); }
+    });
+    img.addEventListener('error', () => console.warn('Skin image failed:', img.src));
+    img.src = skinFaceUrl(id, k);
+    slot[k] = img;
+    return img;
+  }
+  function _onImgReady(img, cb) {
+    let cbs = _imgRedrawCbs.get(img);
+    if (!cbs) { cbs = new Set(); _imgRedrawCbs.set(img, cbs); }
+    cbs.add(cb);
+  }
+
+  // Resolve which file a given (face, matched, idle, typeId) combo wants.
+  // Idle face 1 maps to the trait file (named after the die's typeId);
+  // every other face maps to FACE_<n>; matched maps to FACE_9.
+  function faceKeyFor(face, { matched = false, idle = false, typeId = null } = {}) {
+    if (matched) return 'FACE_9';
+    if (face === 1 && idle && typeId) return _skinKey(typeId);
+    return 'FACE_' + face;
+  }
+
+  // ─── 2D face drawing (deck builder, summary, reveal) ──────────────────
+  // The PNG is the source of truth for the face look — we blit it as-is,
+  // no tinting / no compositing / no overlays. Whatever colors a die has
+  // are baked into the trait PNG. The `tint` parameter is kept in the
+  // signature so existing callers don't need refactoring, but it's ignored.
+  function drawDiceFace(canvas, pips, matched = false, _tint = 0xffffff, skinId = null, opts = {}) {
+    canvas.width = 256; canvas.height = 256;
+    const ctx  = canvas.getContext('2d');
+    const skin = skinId || DEFAULT_SKIN;
+    const key  = faceKeyFor(pips, { matched, idle: opts.idle, typeId: opts.typeId });
+    const img  = getSkinImg(skin, key);
+    const render = () => {
+      ctx.clearRect(0, 0, 256, 256);
+      if (img.complete && img.naturalWidth > 0) {
+        ctx.drawImage(img, 0, 0, 256, 256);
+      }
+    };
+    render();
+    if (!img.complete || img.naturalWidth === 0) _onImgReady(img, render);
+  }
+
+  function makePipCanvas(pips, matched = false, tint = 0xffffff, skinId = null, opts = {}) {
+    const c = document.createElement('canvas');
+    drawDiceFace(c, pips, matched, tint, skinId, opts);
+    return c;
+  }
+
+  // ─── 3D mesh construction ─────────────────────────────────────────────
+  // BoxGeometry material slots: [+X, -X, +Y, -Y, +Z, -Z]
+  const SLOT_FACE = [3, 4, 1, 6, 2, 5];
+
+  // Rotation that puts each face toward the camera (+Z).
+  // Face 1 is on +Y (top) of a standard die, so tip forward by +π/2 around X.
+  // Face 6 is on -Y (bottom), so tip backward by -π/2 around X.
+  const FACE_TOWARD_CAMERA = {
+    1: { x:  Math.PI/2, y: 0,           z: 0 },
+    2: { x: 0,          y: 0,           z: 0 },
+    3: { x: 0,          y: -Math.PI/2,  z: 0 },
+    4: { x: 0,          y:  Math.PI/2,  z: 0 },
+    5: { x: 0,          y:  Math.PI,    z: 0 },
+    6: { x: -Math.PI/2, y: 0,           z: 0 },
+  };
+
+  const GEO = new THREE.BoxGeometry(1, 1, 1);
+
+  function makeDieMesh(_tint = 0xffffff, skinId = DEFAULT_SKIN, typeId = null) {
+    // The PNG is the entire face — no color multiplier. Material.color
+    // stays white so the texture displays its baked pixels untouched.
+    // `_tint` is ignored; kept in the signature for caller compatibility.
+    const mats = SLOT_FACE.map(v => {
+      const idle = v === 1 && !!typeId;
+      return new THREE.MeshStandardMaterial({
+        map: getSkinTex(skinId, faceKeyFor(v, { idle, typeId })),
+        color: 0xffffff,
+        roughness: 0.35,
+        metalness: 0.05,
+      });
+    });
+    return new THREE.Mesh(GEO, mats);
+  }
+
+  // No-op kept for callers — color now lives entirely inside the PNG.
+  function applyDieTint(_die, _tint) { /* intentionally empty */ }
+
+  function showFace(die, face) {
+    const skinId = die.skinId || DEFAULT_SKIN;
+    if (face === MATCH_FACE) {
+      const matchTex = getSkinTex(skinId, 'FACE_9');
+      die.mesh.material.forEach(m => {
+        m.map = matchTex;
+        m.emissive.setHex(0x331022);
+        m.emissiveIntensity = 0.5;
+      });
+    } else {
+      die.mesh.material.forEach((m, i) => {
+        const slotFace = SLOT_FACE[i];
+        // Idle trait icon shows on face 1 only until the die is first
+        // rolled in this session — after that, face 1 always shows pips.
+        const idle = slotFace === 1 && !die.hasRolled && !!die.typeId;
+        m.map = getSkinTex(skinId, faceKeyFor(slotFace, { idle, typeId: die.typeId }));
+        m.emissive.setHex(0x000000);
+        m.emissiveIntensity = 0;
+      });
+      const r = FACE_TOWARD_CAMERA[face];
+      die.mesh.rotation.set(r.x, r.y, r.z);
+    }
+  }
+
+  // Re-bind every face material on a die to the current (skinId, typeId).
+  // Called when the deck builder saves changes or when we enter a match,
+  // so visual state catches up with deck data without rebuilding the mesh.
+  function refreshDieTextures(die) {
+    const skinId = die.skinId || DEFAULT_SKIN;
+    die.mesh.material.forEach((m, i) => {
+      const slotFace = SLOT_FACE[i];
+      const idle = slotFace === 1 && !die.hasRolled && !!die.typeId;
+      m.map = getSkinTex(skinId, faceKeyFor(slotFace, { idle, typeId: die.typeId }));
+      m.needsUpdate = false; // map swap doesn't require recompile
+    });
+  }
+
+  // ─── Create 9 dice ────────────────────────────────────────────────────
+  // Each die instance carries a typeId (from the active deck slot) and a
+  // mutable per-session state bag. Hooks read/write state; nothing does yet.
+  for (let i = 0; i < N; i++) {
+    const typeId = currentDeck()[i] || 'plain';
+    const skinId = currentDeckSkins()[i] || DEFAULT_SKIN;
+    const mesh   = makeDieMesh(DIE_TYPES[typeId] && DIE_TYPES[typeId].color, skinId, typeId);
+    const die = {
+      id: i,
+      typeId,
+      skinId,
+      type: DIE_TYPES[typeId],
+      state: { power: 0 },
+      mesh,
+      face: 1,
+      rolledFace: 1,
+      isMatch: false,
+      hasRolled: false,         // toggles true after first rollDie this session
+      location: { zone: 'hand', slot: i },
+      _tweening: false,
+    };
+    showFace(die, 1);
+    scene.add(mesh);
+    dice.push(die);
+    hand[i] = i;
+  }
+
+  // ─── Layout: map slot/tile rects to scene positions ───────────────────
+  function locationPosition(location) {
+    const el = location.zone === 'hand' ? slotEls[location.slot] : tileEls[location.slot];
+    const r  = el.getBoundingClientRect();
+    const vw = window.innerWidth, vh = window.innerHeight;
+    return {
+      x: (r.left + r.width/2) - vw/2,
+      y: vh/2 - (r.top + r.height/2),
+      size: Math.min(r.width, r.height) * 0.65,
+    };
+  }
+
+  function layoutDie(die) {
+    const p = locationPosition(die.location);
+    die.mesh.position.set(p.x, p.y, 0);
+    die.mesh.scale.setScalar(p.size);
+  }
+
+  function resizeRenderer() {
+    const vw = window.innerWidth, vh = window.innerHeight;
+    renderer.setSize(vw, vh, false);
+    camera.left   = -vw/2;
+    camera.right  =  vw/2;
+    camera.top    =  vh/2;
+    camera.bottom = -vh/2;
+    camera.updateProjectionMatrix();
+    dice.forEach(d => { if (!d._tweening) layoutDie(d); });
+  }
+  window.addEventListener('resize', resizeRenderer);
+  window.addEventListener('orientationchange', resizeRenderer);
+
+  // ─── Tween helper ─────────────────────────────────────────────────────
+  function tween({ duration, onUpdate, ease }) {
+    game.animating++;
+    const t0 = performance.now();
+    ease = ease || (t => t);
+    return new Promise(resolve => {
+      function step(now) {
+        let t = (now - t0) / duration;
+        if (t > 1) t = 1;
+        onUpdate(ease(t));
+        if (t < 1) requestAnimationFrame(step);
+        else { game.animating--; resolve(); }
+      }
+      requestAnimationFrame(step);
+    });
+  }
+  const easeOut   = t => 1 - Math.pow(1 - t, 3);
+  const easeInOut = t => t < 0.5 ? 2*t*t : 1 - Math.pow(-2*t + 2, 2)/2;
+
+  function sleep(ms) {
+    game.animating++;
+    return new Promise(r => setTimeout(() => { game.animating--; r(); }, ms));
+  }
+
+  // ─── Render loop ──────────────────────────────────────────────────────
+  function animate() {
+    requestAnimationFrame(animate);
+    renderer.render(scene, camera);
+  }
+
+  // ─── Interaction ──────────────────────────────────────────────────────
+  function findHandSlot(dieId) {
+    for (let i = 0; i < N; i++) if (hand[i] === dieId) return i;
+    return null;
+  }
+
+  function setSlotClass(slotIdx, cls) {
+    if (slotIdx == null) return;
+    slotEls[slotIdx].className = 'slot' + (cls ? ' ' + cls : '');
+  }
+
+  function onHandTap(slotIdx) {
+    if (game.ended || game.paused || game.animating > 0) return;
+    if (game.rolledDie != null) return;      // must place first
+
+    const dieId = hand[slotIdx];
+    if (dieId == null) return;
+
+    if (game.selectedDie === dieId) {
+      rollDie(dieId);                        // second tap → roll
+    } else {
+      if (game.selectedDie != null) setSlotClass(findHandSlot(game.selectedDie), '');
+      clearInspection();                     // only one highlight at a time
+      game.selectedDie = dieId;
+      setSlotClass(slotIdx, 'selected');
+      updateStrip({ face: 0, tile: 0, power: 0, combo: 0, luck: 0 });
+    }
+  }
+
+  function onBoardTap(tileIdx) {
+    if (game.ended || game.paused || game.animating > 0) return;
+    if (board[tileIdx] != null) {
+      inspectTile(tileIdx);
+      return;
+    }
+    if (game.rolledDie == null) return;
+    placeDie(game.rolledDie, tileIdx);
+  }
+
+  // ─── Inspection ───────────────────────────────────────────────────────
+  function lineFlagsAtTile(tileIdx) {
+    let inTriple = false, inStraight = false;
+    for (const line of LINES) {
+      if (!line.includes(tileIdx)) continue;
+      const faces = line.map(j => board[j] == null ? null : effectiveFace(dice[board[j]]));
+      if (faces.some(f => f == null)) continue;
+      if (isTripleFaces(faces))   inTriple   = true;
+      if (isStraightFaces(faces)) inStraight = true;
+    }
+    return { inTriple, inStraight };
+  }
+
+  function activeLinesNow() {
+    const active = [];
+    for (const line of LINES) {
+      const faces = line.map(j => board[j] == null ? null : effectiveFace(dice[board[j]]));
+      if (faces.some(f => f == null)) continue;
+      if (isTripleFaces(faces) || isStraightFaces(faces)) active.push(line);
+    }
+    return active;
+  }
+
+  function applyComboClasses() {
+    const inActive = new Set();
+    for (const key of activeComboLines) LINE_BY_KEY[key].forEach(i => inActive.add(i));
+    for (let i = 0; i < N; i++) tileEls[i].classList.toggle('combo', inActive.has(i));
+  }
+
+  function comboAtTile(tileIdx) {
+    const die = dice[board[tileIdx]];
+    const { inTriple, inStraight } = lineFlagsAtTile(tileIdx);
+    return COMBO_BASE
+         + (die.isMatch ? COMBO_MATCH : 0)
+         + (inTriple    ? COMBO_TRIPLE : 0)
+         + (inStraight  ? COMBO_STRAIGHT : 0);
+  }
+
+  // ─── Scoring pipeline ─────────────────────────────────────────────────
+  // Shared by end-of-turn scoring, tile-score preview, and placed-die
+  // inspection — so displayed numbers always match what actually scores.
+  function buildScoreCtx(die, tileIdx, flags) {
+    const { isMatch = false, inTriple = false, inStraight = false } = flags || {};
+    const combo = COMBO_BASE
+                + (isMatch    ? COMBO_MATCH    : 0)
+                + (inTriple   ? COMBO_TRIPLE   : 0)
+                + (inStraight ? COMBO_STRAIGHT : 0);
+    const face  = isMatch ? MATCH_FACE : die.rolledFace;
+    const ctx = {
+      die,
+      tileIdx,
+      face,
+      tile:      tiles[tileIdx],
+      power:     die.state ? die.state.power : 0,
+      combo,
+      luck:      game.luck,
+      flatBonus: 0,
+      isMatch, inTriple, inStraight,
+      board,
+      session:   game.session,
+      fired:     false,
+    };
+    if (die.type && typeof die.type.onScore === 'function') {
+      die.type.onScore(ctx);
+    }
+    return ctx;
+  }
+
+  function computeFinalScore(ctx) {
+    return (ctx.face + ctx.tile + ctx.power) * ctx.combo + ctx.luck + ctx.flatBonus;
+  }
+
+  function inspectTile(tileIdx) {
+    const dieId = board[tileIdx];
+    if (dieId == null) return;
+    const die = dice[dieId];
+    if (game.selectedDie != null) {
+      setSlotClass(findHandSlot(game.selectedDie), '');
+      game.selectedDie = null;
+    }
+    if (game.inspectedTile != null) {
+      tileEls[game.inspectedTile].classList.remove('inspected');
+    }
+    game.inspectedTile = tileIdx;
+    tileEls[tileIdx].classList.add('inspected');
+    const flags = { isMatch: die.isMatch, ...lineFlagsAtTile(tileIdx) };
+    const ctx   = buildScoreCtx(die, tileIdx, flags);
+    updateStrip({
+      face:  ctx.face,
+      tile:  ctx.tile,
+      power: ctx.power,
+      combo: ctx.combo,
+      luck:  ctx.luck,
+    });
+  }
+
+  function clearInspection() {
+    if (game.inspectedTile != null) {
+      tileEls[game.inspectedTile].classList.remove('inspected');
+      game.inspectedTile = null;
+    }
+  }
+
+  // ─── Triggers ─────────────────────────────────────────────────────────
+  // Per-die, per-turn dedup: a die with multiple firings in one turn (e.g.
+  // Moth bumping state.power on every roll) still contributes 1 trigger.
+  function bumpTrigger(die) {
+    const perDie = game.session.perDie;
+    if (!perDie[die.id]) perDie[die.id] = {};
+    if (perDie[die.id].triggeredThisTurn) return;
+    perDie[die.id].triggeredThisTurn = true;
+    game.triggers++;
+  }
+
+  // ─── Roll ─────────────────────────────────────────────────────────────
+  async function rollDie(dieId) {
+    const die = dice[dieId];
+    const slotIdx = findHandSlot(dieId);
+
+    game.selectedDie = null;
+    game.rolledDie = dieId;
+    game.rolls++;
+    setSlotClass(slotIdx, 'rolled');
+
+    // 1) Pick a random face. 2) Broadcast onRoll to every die — each hook
+    // checks ctx.self === ctx.rolling to decide if it's the roller. Powers
+    // can rewrite ctx.face (Copycat / Dagger / Gambler); last write wins in
+    // DIE_TYPE_ORDER. Listeners like Moth don't touch ctx.face, they bank to
+    // their own state.power.
+    const originalFace = 1 + Math.floor(Math.random() * 6);
+    const ctx = {
+      rolling:      die,
+      self:         null,
+      face:         originalFace,
+      originalFace,
+      hand, board,
+      session:      game.session,
+      game,
+      fired:        false,
+      deferred:     [],     // out-of-band side effects scheduled for after the roll tween (e.g. Reaper)
+    };
+    for (const typeId of DIE_TYPE_ORDER) {
+      for (const other of dice) {
+        if (other.typeId !== typeId) continue;
+        if (!other.type || typeof other.type.onRoll !== 'function') continue;
+        ctx.self  = other;
+        ctx.fired = false;
+        other.type.onRoll(ctx);
+        if (ctx.fired) bumpTrigger(other);
+      }
+    }
+    let finalFace = Math.floor(ctx.face);
+    if (!Number.isFinite(finalFace) || finalFace < 1 || finalFace > 6) finalFace = originalFace;
+
+    const target  = FACE_TOWARD_CAMERA[finalFace];
+    const r0      = { x: die.mesh.rotation.x, y: die.mesh.rotation.y, z: die.mesh.rotation.z };
+    const spins   = (2 + Math.floor(Math.random() * 2)) * Math.PI * 2;
+
+    die._tweening = true;
+    await tween({
+      duration: 700,
+      ease: easeOut,
+      onUpdate: t => {
+        die.mesh.rotation.x = r0.x + (target.x + spins       - r0.x) * t;
+        die.mesh.rotation.y = r0.y + (target.y + spins * 0.8 - r0.y) * t;
+        die.mesh.rotation.z = r0.z + (target.z               - r0.z) * t;
+      },
+    });
+    die.mesh.rotation.set(target.x, target.y, target.z);
+    die._tweening = false;
+
+    die.face = finalFace;
+    die.rolledFace = finalFace;
+    die.hasRolled = true; // first roll permanently retires the idle trait icon
+    game.session.lastRolledFace = finalFace;
+
+    // Deferred side-effects run AFTER the rotation tween so the roller
+    // visually settles before its power plays out. Currently only Reaper:
+    // the reaped die returns to hand without scoring and without bumping
+    // totalReturns — it's an out-of-band return.
+    for (const d of ctx.deferred) {
+      if (d.type === 'reap' && board[d.boardSlot] === d.dieId) {
+        await returnDie(dice[d.dieId]);
+      }
+    }
+
+    // Strip now reflects in-hand stats for the rolled die — Angel / Demon /
+    // Moth show their banked power immediately, not just at return time.
+    updateStrip({
+      face:  finalFace,
+      power: die.state ? die.state.power : 0,
+      luck:  game.luck,
+    });
+  }
+
+  // ─── Place ────────────────────────────────────────────────────────────
+  async function placeDie(dieId, tileIdx) {
+    const die = dice[dieId];
+    const slotIdx = findHandSlot(dieId);
+
+    hand[slotIdx] = null;
+    board[tileIdx] = dieId;
+    setSlotClass(slotIdx, '');
+    refreshSlotBadge(slotIdx);
+    die.location = { zone: 'board', slot: tileIdx };
+    game.rolledDie = null;
+
+    // onPlace runs BEFORE match detection so Vampire's boosted rolledFace
+    // drives the match check (and later line checks) unchanged.
+    if (die.type && typeof die.type.onPlace === 'function') {
+      const placeCtx = {
+        die,
+        self:    die,
+        tileIdx,
+        tile:    tiles[tileIdx],
+        board, hand,
+        session: game.session,
+        game,
+        fired:   false,
+      };
+      die.type.onPlace(placeCtx);
+      if (placeCtx.fired) bumpTrigger(die);
+    }
+
+    const tileVal = tiles[tileIdx];
+    if (die.rolledFace === tileVal) {
+      if (die.type && die.type.suppressMatch) {
+        // Lost Love: would-be match is silently suppressed — no flip to 9,
+        // no match luck, no match-flagged triggers. Returns still possible
+        // via triple / straight using the rolled face.
+        bumpTrigger(die);
+      } else {
+        die.isMatch = true;
+        die.face = MATCH_FACE;
+        game.matches++;
+      }
+    }
+
+    const from = { x: die.mesh.position.x, y: die.mesh.position.y, size: die.mesh.scale.x };
+    const to   = locationPosition(die.location);
+
+    die._tweening = true;
+    await tween({
+      duration: 350,
+      ease: easeInOut,
+      onUpdate: t => {
+        die.mesh.position.x = from.x + (to.x - from.x) * t;
+        die.mesh.position.y = from.y + (to.y - from.y) * t + Math.sin(t * Math.PI) * 18;
+        die.mesh.scale.setScalar(from.size + (to.size - from.size) * t);
+      },
+    });
+    die._tweening = false;
+
+    if (die.isMatch) {
+      showFace(die, MATCH_FACE);
+      tileEls[tileIdx].classList.add('matched');
+    }
+    tileEls[tileIdx].classList.add('occupied');
+
+    // Cascade any line(s) completed by this placement
+    const nowActive    = activeLinesNow();
+    const newlyActive  = nowActive.filter(l => !activeComboLines.has(lineKey(l)));
+    for (const line of newlyActive) {
+      for (const idx of line) {
+        tileEls[idx].classList.add('combo');
+        await sleep(150);
+      }
+      activeComboLines.add(lineKey(line));
+    }
+
+    refreshAllTilePreviews();
+    inspectTile(tileIdx);
+
+    if (hand.every(x => x == null)) await endOfTurn();
+  }
+
+  // ─── End of turn: snapshot + return sweep ─────────────────────────────
+  async function endOfTurn() {
+    const snapshot = board.map(id => id == null ? null : {
+      id,
+      rolledFace:    dice[id].rolledFace,
+      isMatch:       dice[id].isMatch,
+      face:          dice[id].face,
+      effectiveFace: effectiveFace(dice[id]),
+    });
+
+    // Find every line that triggered as a triple or a straight
+    // (matched dice count as face 9 — 6,6,9 is NOT a triple)
+    const tripleLines   = [];
+    const straightLines = [];
+    for (const line of LINES) {
+      const faces = line.map(j => snapshot[j] && snapshot[j].effectiveFace);
+      if (faces.some(f => f == null)) continue;
+      if (isTripleFaces(faces))   tripleLines.push(line);
+      if (isStraightFaces(faces)) straightLines.push(line);
+    }
+    game.combos += tripleLines.length + straightLines.length;
+
+    const evalResult = snapshot.map((d, i) => {
+      if (!d) return null;
+      const inTriple   = tripleLines.some(line => line.includes(i));
+      const inStraight = straightLines.some(line => line.includes(i));
+      return {
+        returning: d.isMatch || inTriple || inStraight,
+        isMatch:   d.isMatch,
+        inTriple,
+        inStraight,
+      };
+    });
+
+    // Flight: any Flight die on the board joins the return set IFF at least
+    // one die is returning naturally (match / triple / straight). If nothing
+    // else returns, Flights stay put and the turn busts normally.
+    const naturalReturnCount = evalResult.filter(r => r && r.returning).length;
+    if (naturalReturnCount > 0) {
+      for (let i = 0; i < N; i++) {
+        const r = evalResult[i];
+        if (!r || r.returning) continue;
+        const die = dice[snapshot[i].id];
+        if (die.type && die.type.id === 'flight') {
+          r.returning = true;
+          r.flightReturn = true;
+          bumpTrigger(die);
+        }
+      }
+    }
+
+    let returnedCount = 0;
+    for (let i = 0; i < N; i++) {
+      const r = evalResult[i];
+      if (!r || !r.returning) continue;
+
+      if (r.isMatch) game.luck++;                    // luck bumps BEFORE formula
+
+      const die   = dice[snapshot[i].id];
+      const ctx   = buildScoreCtx(die, i, r);
+      const score = computeFinalScore(ctx);
+      if (ctx.fired) bumpTrigger(die);
+
+      game.totalScore   += score;
+      game.totalReturns += 1;
+
+      updateStrip({
+        face:  ctx.face,
+        tile:  ctx.tile,
+        power: ctx.power,
+        combo: ctx.combo,
+        luck:  ctx.luck,
+      });
+      scoreEl.textContent   = game.totalScore;
+      returnsEl.textContent = Math.min(game.totalReturns, RETURN_CAP);
+      refreshAllTilePreviews();
+
+      await returnDie(die);
+      returnedCount++;
+    }
+
+    updateStrip({});
+
+    // Clear per-die per-turn flags so trigger dedup resets next turn.
+    // lastRolledFace intentionally persists across turns within a session.
+    for (const k in game.session.perDie) {
+      if (game.session.perDie[k]) game.session.perDie[k].triggeredThisTurn = false;
+    }
+
+    if (game.totalReturns >= RETURN_CAP) return endSession('cap');
+    if (returnedCount === 0)             return endSession('bust');
+  }
+
+  async function returnDie(die) {
+    let targetSlot = -1;
+    for (let i = 0; i < N; i++) if (hand[i] == null) { targetSlot = i; break; }
+    if (targetSlot === -1) return;
+
+    const boardSlot = die.location.slot;
+    board[boardSlot] = null;
+    hand[targetSlot] = die.id;
+    refreshSlotBadge(targetSlot);
+    tileEls[boardSlot].classList.remove('occupied', 'matched');
+    tileEls[boardSlot].querySelector('.tile-score').textContent = '';
+    if (game.inspectedTile === boardSlot) clearInspection();
+
+    // Any combo lines passing through this tile are no longer active
+    for (const key of [...activeComboLines]) {
+      if (LINE_BY_KEY[key].includes(boardSlot)) activeComboLines.delete(key);
+    }
+    applyComboClasses();
+
+    die.location   = { zone: 'hand', slot: targetSlot };
+    die.face       = 1;
+    die.rolledFace = 1;
+    die.isMatch    = false;
+    die.hasRolled  = false;   // back at rest → idle trait icon returns on face 1
+
+    const from = { x: die.mesh.position.x, y: die.mesh.position.y, size: die.mesh.scale.x };
+    const to   = locationPosition(die.location);
+
+    showFace(die, 1);
+    die._tweening = true;
+    await tween({
+      duration: 400,
+      ease: easeInOut,
+      onUpdate: t => {
+        die.mesh.position.x = from.x + (to.x - from.x) * t;
+        die.mesh.position.y = from.y + (to.y - from.y) * t - Math.sin(t * Math.PI) * 30;
+        die.mesh.scale.setScalar(from.size + (to.size - from.size) * t);
+      },
+    });
+    die._tweening = false;
+  }
+
+  // ─── End of session ───────────────────────────────────────────────────
+  const summaryEl      = document.getElementById('summary-screen');
+  const summaryBoardEl = document.getElementById('summary-board');
+  const sumUsernameEl  = document.getElementById('summary-username');
+  const sumCountdownEl = document.getElementById('summary-countdown');
+  const sumScoreEl     = document.getElementById('summary-score');
+  const sumReturnsEl   = document.getElementById('sum-returns');
+  const sumRollsEl     = document.getElementById('sum-rolls');
+  const sumLuckEl      = document.getElementById('sum-luck');
+  const sumMatchesEl   = document.getElementById('sum-matches');
+  const sumCombosEl    = document.getElementById('sum-combos');
+  const sumTriggersEl  = document.getElementById('sum-triggers');
+  const sumChipsEl     = document.getElementById('sum-chips');
+  const homeChipsEl    = document.getElementById('home-chips');
+
+  function refreshChipsUI() {
+    if (homeChipsEl) homeChipsEl.textContent = chips;
+  }
+  // Currency strip lives inside the Shrine hub (added in Step 2). Until then
+  // the setters just need a safe no-op fallback + home-chips refresh.
+  function refreshCurrencyUI() {
+    refreshChipsUI();
+    document.querySelectorAll('.js-chips').forEach(el => el.textContent = chips);
+    document.querySelectorAll('.js-shards').forEach(el => el.textContent = shards);
+    const invSub = document.getElementById('inv-sub');
+    const sacSub = document.getElementById('sac-sub');
+    if (invSub) invSub.textContent = totalInventoryCount() + ' dice held';
+    if (sacSub) sacSub.textContent = totalDupes() + ' dupes available';
+    const summon = document.getElementById('summon-screen');
+    if (summon && summon.classList.contains('show')) refreshSummonButtons();
+    const sacScreen = document.getElementById('sacrifice-screen');
+    if (sacScreen && sacScreen.classList.contains('show')) refreshSacrificeButtons();
+  }
+
+  function renderSummaryBoard() {
+    summaryBoardEl.innerHTML = '';
+    for (let i = 0; i < N; i++) {
+      const cell = document.createElement('div');
+      cell.className = 'cell';
+      const dieId = board[i];
+      if (dieId != null) {
+        const d = dice[dieId];
+        const face = d.isMatch ? MATCH_FACE : d.rolledFace;
+        const tint = d.type && d.type.color;
+        // Summary board reflects the rolled state, so no idle trait swap.
+        cell.appendChild(makePipCanvas(face, d.isMatch, tint, d.skinId || DEFAULT_SKIN));
+      }
+      summaryBoardEl.appendChild(cell);
+    }
+  }
+
+  function endSession(reason) {
+    game.ended = true;
+    sumUsernameEl.textContent = username || '—';
+    sumScoreEl.textContent    = game.totalScore;
+    sumReturnsEl.textContent  = game.totalReturns;
+    sumRollsEl.textContent    = game.rolls;
+    sumLuckEl.textContent     = game.luck;
+    sumMatchesEl.textContent  = game.matches;
+    sumCombosEl.textContent   = game.combos;
+    sumTriggersEl.textContent = game.triggers;
+    sumChipsEl.textContent    = chips;
+    renderSummaryBoard();
+    updateCountdown();
+    summaryEl.classList.add('show');
+  }
+
+  // ─── Daily reset countdown (UTC midnight) ─────────────────────────────
+  function updateCountdown() {
+    const now = new Date();
+    const next = new Date(Date.UTC(
+      now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1, 0, 0, 0
+    ));
+    let ms = next - now;
+    if (ms < 0) ms = 0;
+    const h = Math.floor(ms / 3600000);
+    const m = Math.floor((ms % 3600000) / 60000);
+    const s = Math.floor((ms % 60000) / 1000);
+    const pad = n => String(n).padStart(2, '0');
+    sumCountdownEl.textContent = `${pad(h)}:${pad(m)}:${pad(s)}`;
+  }
+  let lastForgeDay = todayUTCKey();
+  setInterval(() => {
+    updateCountdown();
+    const shrineOpen = shrineEl && shrineEl.classList.contains('show');
+    const forgeOpen  = forgeEl  && forgeEl.classList.contains('show');
+    if (shrineOpen || forgeOpen) updateForgeCountdown();
+    if (forgeOpen) {
+      const today = todayUTCKey();
+      if (today !== lastForgeDay) {
+        lastForgeDay = today;
+        renderForge();
+      }
+    }
+  }, 1000);
+
+  // ─── Strip + tile-score preview ───────────────────────────────────────
+  function updateStrip({ face, tile, power, combo, luck } = {}) {
+    statFace.textContent  = face  != null ? face  : '—';
+    statTile.textContent  = tile  != null ? tile  : '—';
+    statPower.textContent = power != null ? power : '—';
+    statCombo.textContent = '×' + (combo != null ? combo : 1);
+    statLuck.textContent  = luck  != null ? luck  : game.luck;
+  }
+
+  function previewScore(tileIdx) {
+    const dieId = board[tileIdx];
+    if (dieId == null) return 0;
+    const die   = dice[dieId];
+    const flags = { isMatch: die.isMatch, ...lineFlagsAtTile(tileIdx) };
+    return computeFinalScore(buildScoreCtx(die, tileIdx, flags));
+  }
+
+  function updateTilePreview(tileIdx) {
+    const el    = tileEls[tileIdx].querySelector('.tile-score');
+    const dieId = board[tileIdx];
+    el.textContent = dieId == null ? '' : previewScore(tileIdx);
+  }
+
+  function refreshAllTilePreviews() {
+    for (let i = 0; i < N; i++) updateTilePreview(i);
+  }
+
+  // ─── Reset ────────────────────────────────────────────────────────────
+  function resetGame() {
+    // Re-randomize tiles and refresh displayed values
+    for (let i = 0; i < N; i++) {
+      tiles[i] = 1 + Math.floor(Math.random() * 6);
+      tileEls[i].querySelector('.tile-value').textContent = tiles[i];
+      tileEls[i].querySelector('.tile-score').textContent = '';
+      tileEls[i].classList.remove('occupied', 'matched', 'inspected', 'combo');
+      slotEls[i].className = 'slot';
+      hand[i]  = i;
+      board[i] = null;
+    }
+
+    // Reset dice — pull fresh typeIds from the active deck in case the
+    // player edited the deck since last session, and wipe per-die state.
+    const deckNow = currentDeck();
+    const skinsNow = currentDeckSkins();
+    dice.forEach((die, i) => {
+      const typeId  = deckNow[i] || 'plain';
+      die.typeId    = typeId;
+      die.skinId    = skinsNow[i] || DEFAULT_SKIN;
+      die.type      = DIE_TYPES[typeId];
+      die.state     = { power: 0 };
+      die.face = 1;
+      die.rolledFace = 1;
+      die.isMatch = false;
+      die.hasRolled = false;     // restore idle trait icon for the new session
+      die.location = { zone: 'hand', slot: i };
+      die._tweening = false;
+      // Re-bind the mesh's face textures to the new (skinId, typeId) pair
+      // — this is what propagates deck-builder changes into the live mesh.
+      refreshDieTextures(die);
+      showFace(die, 1);
+      applyDieTint(die, die.type && die.type.color);
+      layoutDie(die);
+    });
+    refreshAllSlotBadges();
+
+    // Reset game state
+    game.luck = 0;
+    game.totalScore = 0;
+    game.totalReturns = 0;
+    game.rolls = 0;
+    game.matches = 0;
+    game.combos = 0;
+    game.triggers = 0;
+    game.selectedDie = null;
+    game.rolledDie = null;
+    game.inspectedTile = null;
+    game.ended = false;
+    game.animating = 0;
+    game.session = { lastRolledFace: null, perDie: {} };
+    activeComboLines.clear();
+
+    scoreEl.textContent   = 0;
+    returnsEl.textContent = 0;
+    updateStrip({});
+    summaryEl.classList.remove('show');
+  }
+
+  // ─── Overlays: home / menu / options / name-entry ─────────────────────
+  const homeScreen    = document.getElementById('home-screen');
+  const menuMain      = document.getElementById('menu-main');
+  const menuOptions   = document.getElementById('menu-options-panel');
+  const nameEntry     = document.getElementById('name-entry');
+  const homeUserEl    = document.getElementById('home-username');
+  const nameInput     = document.getElementById('name-input');
+  const burgerBtn     = document.getElementById('burger');
+
+  const deckBuilderEl = document.getElementById('deck-builder');
+  const collectionEl  = document.getElementById('collection-browser');
+  const shrineEl      = document.getElementById('shrine-hub');
+  const forgeSubEl    = document.getElementById('forge-sub');
+  const invSubEl      = document.getElementById('inv-sub');
+  const inventoryEl   = document.getElementById('inventory-browser');
+  const inventoryGridEl = document.getElementById('inventory-grid');
+  const invCounterEl  = document.getElementById('inv-counter');
+  const sacrificeSheetEl = document.getElementById('sacrifice-sheet');
+  const sheetTitleEl  = document.getElementById('sheet-title');
+  const sheetQtyEl    = document.getElementById('sheet-qty');
+  const sheetChipsEl  = document.getElementById('sheet-chips');
+  const sheetShardsEl = document.getElementById('sheet-shards');
+  const sheetMinusEl  = document.getElementById('sheet-minus');
+  const sheetPlusEl   = document.getElementById('sheet-plus');
+  const summonEl        = document.getElementById('summon-screen');
+  const summonSingleBtn = document.getElementById('summon-single');
+  const summonTenBtn    = document.getElementById('summon-ten');
+  const revealEl        = document.getElementById('reveal-screen');
+  const revealGridEl    = document.getElementById('reveal-grid');
+  const revealSingleEl     = document.getElementById('reveal-single');
+  const revealSingleTitle  = document.getElementById('reveal-single-title');
+  const revealSingleName   = document.getElementById('reveal-single-name');
+  const revealSingleNewTag = document.getElementById('reveal-single-new');
+  const revealCanvas       = document.getElementById('reveal-canvas');
+  const revealNextBtn      = document.getElementById('reveal-next');
+  const revealSkipBtn      = document.getElementById('reveal-skip');
+  const forgeEl         = document.getElementById('forge-screen');
+  const forgeRosterEl   = document.getElementById('forge-roster');
+  const forgeCountdownEl = document.getElementById('forge-countdown');
+  const forgeSheetEl    = document.getElementById('forge-sheet');
+  const forgeSheetTitleEl = document.getElementById('forge-sheet-title');
+  const forgeSheetCostEl  = document.getElementById('forge-sheet-cost');
+  const modeCarouselEl    = document.getElementById('mode-carousel');
+  const modeTrackEl       = document.getElementById('mode-track');
+  const modeDotsEl        = document.getElementById('mode-dots');
+  const modePrevBtn       = document.getElementById('mode-prev');
+  const modeNextBtn       = document.getElementById('mode-next');
+  const modeContinueBtn   = document.getElementById('mode-continue');
+  const deckCarouselEl    = document.getElementById('deck-carousel');
+  const deckTrackEl       = document.getElementById('deck-track');
+  const deckDotsEl        = document.getElementById('deck-dots');
+  const deckPrevBtn       = document.getElementById('deck-prev');
+  const deckNextBtn       = document.getElementById('deck-next');
+  const deckPlayBtn       = document.getElementById('deck-play');
+  const sacrificeScreenEl = document.getElementById('sacrifice-screen');
+  const sacrificeResultEl = document.getElementById('sacrifice-result');
+  const sacrificeGridEl   = document.getElementById('sacrifice-grid');
+  const sacSingleBtn      = document.getElementById('sacrifice-single');
+  const sacTenBtn         = document.getElementById('sacrifice-ten');
+  const sacPoolEl         = document.getElementById('sacrifice-pool');
+  const sacSubEl          = document.getElementById('sac-sub');
+  const sacYieldChipsEl   = document.getElementById('sac-yield-chips');
+  const sacYieldShardsEl  = document.getElementById('sac-yield-shards');
+
+  function showOverlay(el) {
+    [homeScreen, menuMain, menuOptions, nameEntry, deckBuilderEl, collectionEl,
+     shrineEl, inventoryEl, summonEl, revealEl, revealSingleEl, forgeEl,
+     modeCarouselEl, deckCarouselEl,
+     sacrificeScreenEl, sacrificeResultEl,
+     document.getElementById('skin-browser')]
+      .forEach(o => o && o.classList.remove('show'));
+    if (el) el.classList.add('show');
+    game.paused = el != null;
+    if (el !== revealSingleEl) stopRevealLoop();
+  }
+
+  function totalInventoryCount() {
+    return Object.values(inventory).reduce((a, b) => a + b, 0);
+  }
+  function forgeResetText() {
+    const now = new Date();
+    const next = new Date(Date.UTC(
+      now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1, 0, 0, 0
+    ));
+    let ms = next - now;
+    if (ms < 0) ms = 0;
+    const h = Math.floor(ms / 3600000);
+    const m = Math.floor((ms % 3600000) / 60000);
+    const s = Math.floor((ms % 60000) / 1000);
+    const pad = n => String(n).padStart(2, '0');
+    return `Resets ${pad(h)}:${pad(m)}:${pad(s)}`;
+  }
+  function updateForgeCountdown() {
+    const text = forgeResetText();
+    if (forgeSubEl) forgeSubEl.textContent = text;
+    if (forgeCountdownEl) forgeCountdownEl.textContent = text;
+  }
+  function totalDupes() {
+    let sum = 0;
+    for (const t of DIE_TYPE_ORDER) {
+      sum += Math.max(0, (inventory[t] || 0) - 1);
+    }
+    return sum;
+  }
+  function refreshShrineSubs() {
+    if (invSubEl) invSubEl.textContent = totalInventoryCount() + ' dice held';
+    if (sacSubEl) sacSubEl.textContent = totalDupes() + ' dupes available';
+  }
+  function openShrine() {
+    refreshCurrencyUI();
+    refreshShrineSubs();
+    updateForgeCountdown();
+    showOverlay(shrineEl);
+  }
+
+  // ─── Inventory browser ────────────────────────────────────────────────
+  function openInventory() {
+    refreshCurrencyUI();
+    renderInventory();
+    showOverlay(inventoryEl);
+  }
+  function renderInventory() {
+    invCounterEl.textContent = totalInventoryCount() + ' dice';
+    inventoryGridEl.innerHTML = '';
+    DIE_TYPE_ORDER.forEach(typeId => {
+      const type  = DIE_TYPES[typeId];
+      const count = dieCount(typeId);
+      const owned = count > 0;
+
+      const el = document.createElement('div');
+      el.className = 'collection-entry inv-entry' + (!owned ? ' locked' : '');
+
+      if (owned) {
+        el.appendChild(makePipCanvas(1, false, type && type.color));
+        const lbl = document.createElement('div');
+        lbl.className = 'entry-label';
+        lbl.textContent = type.name;
+        el.appendChild(lbl);
+
+        const badge = document.createElement('div');
+        badge.className = 'inv-count';
+        badge.textContent = '×' + count;
+        el.appendChild(badge);
+      } else {
+        const sil = document.createElement('div');
+        sil.className = 'collection-silhouette';
+        sil.textContent = '???';
+        el.appendChild(sil);
+        const lbl = document.createElement('div');
+        lbl.className = 'entry-label';
+        lbl.textContent = '???';
+        el.appendChild(lbl);
+      }
+      inventoryGridEl.appendChild(el);
+    });
+  }
+
+  // ─── Sacrifice sheet ──────────────────────────────────────────────────
+  let sacrificeContext = null; // { typeId, qty, max }
+
+  function openSacrificeSheet(typeId) {
+    const type = DIE_TYPES[typeId];
+    const max  = dieCount(typeId) - 1; // last copy is protected
+    if (max < 1) return;
+    sacrificeContext = { typeId, qty: 1, max };
+    sheetTitleEl.textContent = 'Sacrifice ' + type.name;
+    updateSacrificeSheet();
+    sacrificeSheetEl.classList.add('show');
+  }
+  function closeSacrificeSheet() {
+    sacrificeSheetEl.classList.remove('show');
+    sacrificeContext = null;
+  }
+  function updateSacrificeSheet() {
+    if (!sacrificeContext) return;
+    const { qty, max } = sacrificeContext;
+    sheetQtyEl.textContent    = qty;
+    sheetChipsEl.textContent  = qty * SACRIFICE_CHIPS;
+    sheetShardsEl.textContent = qty * SACRIFICE_SHARDS;
+    sheetMinusEl.disabled = qty <= 1;
+    sheetPlusEl.disabled  = qty >= max;
+  }
+  function stepSacrifice(delta) {
+    if (!sacrificeContext) return;
+    const { qty, max } = sacrificeContext;
+    sacrificeContext.qty = Math.max(1, Math.min(max, qty + delta));
+    updateSacrificeSheet();
+  }
+  function confirmSacrifice() {
+    if (!sacrificeContext) return;
+    const { typeId, qty } = sacrificeContext;
+    removeFromInventory(typeId, qty);
+    setChips(chips + qty * SACRIFICE_CHIPS);
+    setShards(shards + qty * SACRIFICE_SHARDS);
+    closeSacrificeSheet();
+    renderInventory();
+  }
+
+  // ─── Summon + reveal ──────────────────────────────────────────────────
+  let pullResults = []; // [{ typeId, isNew, sacrificed }]
+
+  function openSummon() {
+    refreshCurrencyUI();
+    refreshSummonButtons();
+    showOverlay(summonEl);
+  }
+  function refreshSummonButtons() {
+    summonSingleBtn.disabled = chips < SUMMON_COST_SINGLE;
+    summonTenBtn.disabled    = chips < SUMMON_COST_TEN;
+  }
+  function randomDieType() {
+    const idx = Math.floor(Math.random() * DIE_TYPE_ORDER.length);
+    return DIE_TYPE_ORDER[idx];
+  }
+  function doPull(n) {
+    const cost = n === 1 ? SUMMON_COST_SINGLE : SUMMON_COST_TEN;
+    if (chips < cost) return;
+    setChips(chips - cost);
+    pullResults = [];
+    for (let i = 0; i < n; i++) {
+      const typeId = randomDieType();
+      const isNew  = dieCount(typeId) === 0;
+      addToInventory(typeId, 1);
+      pullResults.push({ typeId, isNew, sacrificed: false });
+    }
+    openRevealSingle(0);
+  }
+  // ─── One-at-a-time reveal with spinning 3D die ───────────────────────
+  let revealIdx = 0;
+  let revealRenderer, revealScene, revealCamera, revealDie, revealRaf = null;
+  function initRevealScene() {
+    if (revealRenderer) return;
+    revealRenderer = new THREE.WebGLRenderer({ canvas: revealCanvas, antialias: true, alpha: true });
+    revealRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    revealRenderer.setSize(280, 280, false);
+    revealScene = new THREE.Scene();
+    revealCamera = new THREE.PerspectiveCamera(35, 1, 0.1, 100);
+    revealCamera.position.set(0, 0, 4);
+    revealScene.add(new THREE.AmbientLight(0xffffff, 0.65));
+    const k = new THREE.DirectionalLight(0xffffff, 0.85);
+    k.position.set(2, 4, 5); revealScene.add(k);
+    const f = new THREE.DirectionalLight(0x8888ff, 0.22);
+    f.position.set(-2, -1, 3); revealScene.add(f);
+    revealDie = makeDieMesh(0xffffff);
+    revealDie.scale.setScalar(1.6);
+    revealScene.add(revealDie);
+  }
+  function startRevealLoop() {
+    if (revealRaf != null) return;
+    const tick = () => {
+      revealDie.rotation.x += 0.006;
+      revealDie.rotation.y += 0.012;
+      revealRenderer.render(revealScene, revealCamera);
+      revealRaf = requestAnimationFrame(tick);
+    };
+    revealRaf = requestAnimationFrame(tick);
+  }
+  function stopRevealLoop() {
+    if (revealRaf != null) { cancelAnimationFrame(revealRaf); revealRaf = null; }
+  }
+  function renderRevealSingle() {
+    const r = pullResults[revealIdx];
+    const type = DIE_TYPES[r.typeId];
+    const total = pullResults.length;
+    revealSingleTitle.textContent = total > 1
+      ? `Summoned  ${revealIdx + 1} / ${total}`
+      : 'Summoned';
+    revealSingleName.textContent = type.name;
+    revealSingleNewTag.style.display = r.isNew ? '' : 'none';
+    // Rebind face 1 to the summoned type's trait icon — color is baked
+    // into the PNG itself so we don't touch material.color.
+    revealDie.material.forEach((m, i) => {
+      const slotFace = SLOT_FACE[i];
+      const idle = slotFace === 1;
+      m.map = getSkinTex(DEFAULT_SKIN, faceKeyFor(slotFace, { idle, typeId: r.typeId }));
+    });
+    revealNextBtn.textContent = (revealIdx === total - 1) ? 'Finish' : 'Next';
+    revealSkipBtn.style.display = total > 1 ? '' : 'none';
+  }
+  function openRevealSingle(idx) {
+    revealIdx = idx | 0;
+    refreshCurrencyUI();
+    initRevealScene();
+    renderRevealSingle();
+    showOverlay(revealSingleEl);
+    startRevealLoop();
+  }
+  function advanceReveal() {
+    if (revealIdx >= pullResults.length - 1) {
+      openReveal();
+      return;
+    }
+    revealIdx++;
+    renderRevealSingle();
+  }
+  function skipReveal() {
+    openReveal();
+  }
+
+  function openReveal() {
+    refreshCurrencyUI();
+    renderReveal();
+    showOverlay(revealEl);
+  }
+  function renderReveal() {
+    revealGridEl.innerHTML = '';
+    revealGridEl.classList.toggle('single', pullResults.length === 1);
+    pullResults.forEach(r => {
+      const type = DIE_TYPES[r.typeId];
+      const el = document.createElement('div');
+      el.className = 'reveal-entry' + (r.isNew ? ' new' : '');
+      el.appendChild(makePipCanvas(1, false, type && type.color));
+      const lbl = document.createElement('div');
+      lbl.className = 'entry-label';
+      lbl.textContent = type.name;
+      el.appendChild(lbl);
+      if (r.isNew) {
+        const tag = document.createElement('div');
+        tag.className = 'new-tag';
+        tag.textContent = 'NEW';
+        el.appendChild(tag);
+      }
+      revealGridEl.appendChild(el);
+    });
+  }
+  function closeReveal() {
+    pullResults = [];
+    openShrine();
+  }
+
+  // ─── Forge ────────────────────────────────────────────────────────────
+  function todayUTCKey() {
+    const d = new Date();
+    const pad = n => String(n).padStart(2, '0');
+    return d.getUTCFullYear() + '-' + pad(d.getUTCMonth() + 1) + '-' + pad(d.getUTCDate());
+  }
+  function pickRandomDistinct(pool, n) {
+    const copy = [...pool];
+    const out = [];
+    for (let i = 0; i < n && copy.length > 0; i++) {
+      const idx = Math.floor(Math.random() * copy.length);
+      out.push(copy.splice(idx, 1)[0]);
+    }
+    return out;
+  }
+  function getForgeRoster() {
+    const today = todayUTCKey();
+    let stored = loadJSON(FORGE_ROSTER_KEY, null);
+    if (!stored || stored.date !== today ||
+        !Array.isArray(stored.types) || stored.types.length !== FORGE_ROSTER_SIZE) {
+      stored = { date: today, types: pickRandomDistinct(DIE_TYPE_ORDER, FORGE_ROSTER_SIZE) };
+      saveJSON(FORGE_ROSTER_KEY, stored);
+    }
+    return stored.types;
+  }
+
+  let forgeContext = null;
+
+  function openForge() {
+    refreshCurrencyUI();
+    renderForge();
+    updateForgeCountdown();
+    showOverlay(forgeEl);
+  }
+  function renderForge() {
+    const roster = getForgeRoster();
+    forgeRosterEl.innerHTML = '';
+    roster.forEach(typeId => {
+      const type = DIE_TYPES[typeId];
+      const card = document.createElement('div');
+      card.className = 'forge-card';
+      card.appendChild(makePipCanvas(1, false, type && type.color));
+      const lbl = document.createElement('div');
+      lbl.className = 'entry-label';
+      lbl.textContent = type.name;
+      card.appendChild(lbl);
+      const cost = document.createElement('div');
+      cost.className = 'forge-cost';
+      cost.textContent = FORGE_COST_SHARDS + ' shards';
+      card.appendChild(cost);
+      const btn = document.createElement('button');
+      btn.className = 'forge-btn';
+      btn.textContent = 'Forge';
+      btn.disabled = shards < FORGE_COST_SHARDS;
+      btn.addEventListener('click', () => openForgeSheet(typeId));
+      card.appendChild(btn);
+      forgeRosterEl.appendChild(card);
+    });
+  }
+  function openForgeSheet(typeId) {
+    if (shards < FORGE_COST_SHARDS) return;
+    forgeContext = { typeId };
+    forgeSheetTitleEl.textContent = 'Forge ' + DIE_TYPES[typeId].name;
+    forgeSheetCostEl.textContent  = FORGE_COST_SHARDS;
+    forgeSheetEl.classList.add('show');
+  }
+  function closeForgeSheet() {
+    forgeSheetEl.classList.remove('show');
+    forgeContext = null;
+  }
+  function confirmForge() {
+    if (!forgeContext) return;
+    if (shards < FORGE_COST_SHARDS) { closeForgeSheet(); return; }
+    const { typeId } = forgeContext;
+    setShards(shards - FORGE_COST_SHARDS);
+    addToInventory(typeId, 1);
+    closeForgeSheet();
+    renderForge();
+  }
+
+  // ─── Mode + Deck carousels ────────────────────────────────────────────
+  const MODES = [
+    { id: 'ranked',   title: 'Ranked',   desc: 'Climb the daily leaderboard', enabled: true  },
+    { id: 'unranked', title: 'Unranked', desc: 'Casual play, no rank change', enabled: true  },
+    { id: 'story',    title: 'Story',    desc: 'Narrative challenges',        enabled: false },
+  ];
+  let modeIdx = 0;
+  let deckIdx = 0;
+
+  function renderDots(container, count, active) {
+    container.innerHTML = '';
+    for (let i = 0; i < count; i++) {
+      const d = document.createElement('span');
+      d.className = 'dot' + (i === active ? ' active' : '');
+      container.appendChild(d);
+    }
+  }
+
+  function renderModeCarousel() {
+    modeTrackEl.innerHTML = '';
+    MODES.forEach(m => {
+      const card = document.createElement('div');
+      card.className = 'carousel-card mode-card';
+      const t = document.createElement('div');
+      t.className = 'mode-title';
+      t.textContent = m.title;
+      card.appendChild(t);
+      const d = document.createElement('div');
+      d.className = 'mode-desc';
+      d.textContent = m.desc;
+      card.appendChild(d);
+      if (!m.enabled) {
+        const cs = document.createElement('div');
+        cs.className = 'coming-soon';
+        cs.textContent = 'Coming Soon';
+        card.appendChild(cs);
+      }
+      modeTrackEl.appendChild(card);
+    });
+    applyCarouselIndex(modeTrackEl, modeIdx);
+    renderDots(modeDotsEl, MODES.length, modeIdx);
+    refreshModeButtons();
+  }
+  function refreshModeButtons() {
+    modeContinueBtn.disabled = !MODES[modeIdx].enabled;
+    modeContinueBtn.textContent = MODES[modeIdx].enabled ? 'Continue' : 'Coming Soon';
+  }
+  function openModeCarousel() {
+    modeIdx = 0;
+    renderModeCarousel();
+    showOverlay(modeCarouselEl);
+  }
+  function setModeIdx(n) {
+    const len = MODES.length;
+    const old = modeIdx;
+    const next = ((n % len) + len) % len;
+    const instant = Math.abs(next - old) > 1; // snap on wrap
+    modeIdx = next;
+    applyCarouselIndex(modeTrackEl, modeIdx, 0, instant);
+    renderDots(modeDotsEl, len, modeIdx);
+    refreshModeButtons();
+  }
+
+  function renderDeckCarousel() {
+    deckTrackEl.innerHTML = '';
+    decks.forEach((deck, i) => {
+      const card = document.createElement('div');
+      card.className = 'carousel-card deck-card';
+      const grid = document.createElement('div');
+      grid.className = 'deck-mini-grid';
+      for (let s = 0; s < N; s++) {
+        const slot = document.createElement('div');
+        slot.className = 'deck-mini-die';
+        const typeId = deck[s];
+        const type = typeId && DIE_TYPES[typeId];
+        if (type) {
+          slot.style.background = '#' + type.color.toString(16).padStart(6, '0');
+          slot.textContent = type.badge || '';
+        } else {
+          slot.classList.add('empty');
+          slot.textContent = '—';
+        }
+        grid.appendChild(slot);
+      }
+      card.appendChild(grid);
+      const t = document.createElement('div');
+      t.className = 'deck-title';
+      t.textContent = 'Deck ' + (i + 1);
+      card.appendChild(t);
+      deckTrackEl.appendChild(card);
+    });
+    applyCarouselIndex(deckTrackEl, deckIdx);
+    renderDots(deckDotsEl, decks.length, deckIdx);
+    refreshDeckButtons();
+  }
+  function refreshDeckButtons() {
+    // wrap-around: prev/next always enabled
+  }
+  function openDeckCarousel() {
+    deckIdx = activeDeckIdx;
+    renderDeckCarousel();
+    showOverlay(deckCarouselEl);
+  }
+  function setDeckIdx(n) {
+    const len = decks.length;
+    const old = deckIdx;
+    const next = ((n % len) + len) % len;
+    const instant = Math.abs(next - old) > 1; // snap on wrap
+    deckIdx = next;
+    applyCarouselIndex(deckTrackEl, deckIdx, 0, instant);
+    renderDots(deckDotsEl, len, deckIdx);
+    refreshDeckButtons();
+  }
+
+  function applyCarouselIndex(track, idx, dragOffsetPx, instant) {
+    const w = track.parentElement.clientWidth;
+    const base = -idx * w;
+    const x = base + (dragOffsetPx || 0);
+    if (instant) {
+      track.classList.add('dragging');
+      track.style.transform = `translateX(${x}px)`;
+      // force reflow, then re-enable transition for subsequent moves
+      void track.offsetHeight;
+      track.classList.remove('dragging');
+    } else {
+      track.style.transform = `translateX(${x}px)`;
+    }
+  }
+
+  function attachCarouselSwipe(track, getIdx, setIdx, getMax) {
+    let startX = 0;
+    let dragging = false;
+    let dx = 0;
+    track.addEventListener('touchstart', (e) => {
+      if (e.touches.length !== 1) return;
+      dragging = true;
+      startX = e.touches[0].clientX;
+      dx = 0;
+      track.classList.add('dragging');
+    }, { passive: true });
+    track.addEventListener('touchmove', (e) => {
+      if (!dragging) return;
+      dx = e.touches[0].clientX - startX;
+      applyCarouselIndex(track, getIdx(), dx);
+    }, { passive: true });
+    track.addEventListener('touchend', () => {
+      if (!dragging) return;
+      dragging = false;
+      track.classList.remove('dragging');
+      const w = track.parentElement.clientWidth;
+      const threshold = Math.max(40, w * 0.2);
+      let next = getIdx();
+      if (dx <= -threshold) next++;
+      else if (dx >= threshold) next--;
+      setIdx(next);  // wraps internally
+      dx = 0;
+    });
+  }
+
+  // ─── Sacrifice flow ───────────────────────────────────────────────────
+  let sacrificeResults = []; // [{ typeId }]
+
+  function openSacrifice() {
+    refreshCurrencyUI();
+    refreshSacrificeButtons();
+    showOverlay(sacrificeScreenEl);
+  }
+  function refreshSacrificeButtons() {
+    const pool = totalDupes();
+    sacSingleBtn.disabled = pool < 1;
+    sacTenBtn.disabled    = pool < 10;
+    sacPoolEl.textContent = pool + ' dupes available';
+  }
+  function pickMostDuplicatedType() {
+    let bestCount = 1;
+    let candidates = [];
+    for (const t of DIE_TYPE_ORDER) {
+      const c = inventory[t] || 0;
+      if (c > bestCount) {
+        bestCount = c;
+        candidates = [t];
+      } else if (c === bestCount && c >= 2) {
+        candidates.push(t);
+      }
+    }
+    if (candidates.length === 0) return null;
+    return candidates[Math.floor(Math.random() * candidates.length)];
+  }
+  function doSacrifice(n) {
+    if (totalDupes() < n) return;
+    sacrificeResults = [];
+    let gainedChips = 0;
+    let gainedShards = 0;
+    for (let i = 0; i < n; i++) {
+      const typeId = pickMostDuplicatedType();
+      if (!typeId) break;
+      removeFromInventory(typeId, 1);
+      sacrificeResults.push({ typeId });
+      gainedChips  += SACRIFICE_CHIPS;
+      gainedShards += SACRIFICE_SHARDS;
+    }
+    setChips(chips + gainedChips);
+    setShards(shards + gainedShards);
+    openSacrificeResult(gainedChips, gainedShards);
+  }
+  function openSacrificeResult(gChips, gShards) {
+    sacYieldChipsEl.textContent  = gChips;
+    sacYieldShardsEl.textContent = gShards;
+    renderSacrificeResult();
+    showOverlay(sacrificeResultEl);
+  }
+  function renderSacrificeResult() {
+    sacrificeGridEl.innerHTML = '';
+    sacrificeGridEl.classList.toggle('single', sacrificeResults.length === 1);
+    sacrificeResults.forEach(r => {
+      const type = DIE_TYPES[r.typeId];
+      const el = document.createElement('div');
+      el.className = 'reveal-entry sacrificed';
+      el.appendChild(makePipCanvas(1, false, type && type.color));
+      const lbl = document.createElement('div');
+      lbl.className = 'entry-label';
+      lbl.textContent = type.name;
+      el.appendChild(lbl);
+      sacrificeGridEl.appendChild(el);
+    });
+  }
+  function closeSacrificeResult() {
+    sacrificeResults = [];
+    openShrine();
+  }
+
+  function startGameWithSelection() {
+    const selectedMode = MODES[modeIdx];
+    if (!selectedMode.enabled) return;
+    if (activeDeckIdx !== deckIdx) {
+      activeDeckIdx = deckIdx;
+      saveJSON(ACTIVE_DECK_KEY, activeDeckIdx);
+    }
+    // Always re-sync dice from the chosen deck so edits to the *current*
+    // active deck (incl. skin changes) are reflected in gameplay without
+    // requiring the player to swap decks first.
+    resetGame();
+    showOverlay(null);
+  }
+
+  function refreshHomeUsername() {
+    homeUserEl.textContent = username || '—';
+  }
+
+  burgerBtn.addEventListener('click', () => {
+    if (game.ended) return;
+    showOverlay(menuMain);
+  });
+
+  document.getElementById('home-play').addEventListener('click', openModeCarousel);
+
+  document.getElementById('mode-back').addEventListener('click', () => showOverlay(homeScreen));
+  modePrevBtn.addEventListener('click', () => setModeIdx(modeIdx - 1));
+  modeNextBtn.addEventListener('click', () => setModeIdx(modeIdx + 1));
+  modeContinueBtn.addEventListener('click', () => {
+    if (!MODES[modeIdx].enabled) return;
+    openDeckCarousel();
+  });
+  attachCarouselSwipe(modeTrackEl, () => modeIdx, setModeIdx, () => MODES.length);
+
+  document.getElementById('deck-back').addEventListener('click', () => {
+    renderModeCarousel();
+    showOverlay(modeCarouselEl);
+  });
+  deckPrevBtn.addEventListener('click', () => setDeckIdx(deckIdx - 1));
+  deckNextBtn.addEventListener('click', () => setDeckIdx(deckIdx + 1));
+  deckPlayBtn.addEventListener('click', startGameWithSelection);
+  attachCarouselSwipe(deckTrackEl, () => deckIdx, setDeckIdx, () => decks.length);
+
+  document.getElementById('menu-return').addEventListener('click', () => {
+    showOverlay(null);
+  });
+
+  document.getElementById('menu-restart').addEventListener('click', () => {
+    resetGame();
+    showOverlay(null);
+  });
+
+  let optionsReturn = menuMain;
+  document.getElementById('menu-options').addEventListener('click', () => {
+    optionsReturn = menuMain;
+    showOverlay(menuOptions);
+  });
+  document.getElementById('home-options').addEventListener('click', () => {
+    optionsReturn = homeScreen;
+    showOverlay(menuOptions);
+  });
+
+  document.getElementById('menu-quit').addEventListener('click', () => {
+    resetGame();
+    showOverlay(homeScreen);
+  });
+
+  document.getElementById('options-back').addEventListener('click', () => {
+    showOverlay(optionsReturn || menuMain);
+  });
+
+  document.getElementById('options-logout').addEventListener('click', () => {
+    if (!confirm('Log out? This will erase your save.')) return;
+    [USERNAME_KEY, COLLECTION_KEY, INVENTORY_KEY, DECKS_KEY, ACTIVE_DECK_KEY,
+     CHIPS_KEY, SHARDS_KEY, FORGE_ROSTER_KEY, DECK_SKINS_KEY].forEach(k => localStorage.removeItem(k));
+    location.reload();
+  });
+
+  // Name entry
+  function commitName() {
+    const v = nameInput.value.trim();
+    if (!v) return;
+    username = v.slice(0, 16);
+    localStorage.setItem(USERNAME_KEY, username);
+    refreshHomeUsername();
+    showOverlay(homeScreen);
+  }
+  document.getElementById('name-continue').addEventListener('click', commitName);
+  nameInput.addEventListener('keydown', e => {
+    if (e.key === 'Enter') commitName();
+  });
+
+  // Summary actions
+  document.getElementById('summary-exit').addEventListener('click', () => {
+    resetGame();
+    showOverlay(homeScreen);
+  });
+  document.getElementById('summary-play').addEventListener('click', () => {
+    resetGame();
+    showOverlay(null);
+  });
+
+  // ─── Deck Builder ─────────────────────────────────────────────────────
+  // Editing happens against a draft (all three decks cloned) so the player
+  // can cancel without persisting changes. Confirm writes draft → decks,
+  // activates the deck they were viewing, and resets the game so the new
+  // deck takes effect on the next Play.
+  const builderSlotsEl   = document.getElementById('builder-slots');
+  const builderDeckBtn   = document.getElementById('builder-deck');
+  const builderFlavorEl  = document.getElementById('builder-die-flavor');
+  const layerDiceValEl   = document.querySelector('#layer-dice .layer-value');
+  const layerSkinValEl   = document.querySelector('#layer-skin .layer-value');
+  const skinBrowserEl    = document.getElementById('skin-browser');
+  const skinGridEl       = document.getElementById('skin-grid');
+  const collectionGridEl = document.getElementById('collection-grid');
+  const collectionCounterEl = document.getElementById('collection-counter');
+
+  const builder = {
+    draftDecks:   null,     // (string|null)[3][9]
+    draftSkins:   null,     // string[3][9]  (skin ids)
+    deckIdx:      0,
+    selectedSlot: 0,
+  };
+  let browserActive = false;   // true while the collection browser is visible
+
+  function openDeckBuilder() {
+    builder.draftDecks   = decks.map(d => [...d]);
+    builder.draftSkins   = deckSkins.map(d => [...d]);
+    builder.deckIdx      = activeDeckIdx;
+    builder.selectedSlot = 0;
+    renderBuilder();
+    showOverlay(deckBuilderEl);
+  }
+
+  function renderBuilder() {
+    builderDeckBtn.textContent = 'Deck ' + (builder.deckIdx + 1);
+    // Slots grid
+    builderSlotsEl.innerHTML = '';
+    const deck  = builder.draftDecks[builder.deckIdx];
+    const skins = builder.draftSkins[builder.deckIdx];
+    for (let i = 0; i < N; i++) {
+      const typeId = deck[i] || 'plain';
+      const skinId = skins[i] || DEFAULT_SKIN;
+      const type   = DIE_TYPES[typeId];
+      const el = document.createElement('div');
+      el.className = 'builder-slot' + (i === builder.selectedSlot ? ' selected' : '');
+      // Builder slot shows the resting/idle trait icon on face 1, since
+      // it's a "this is what your die looks like at rest" preview.
+      el.appendChild(makePipCanvas(1, false, type && type.color, skinId, { idle: true, typeId }));
+      const label = document.createElement('div');
+      label.className = 'slot-label';
+      label.textContent = type ? type.name : '—';
+      el.appendChild(label);
+      el.addEventListener('click', () => {
+        builder.selectedSlot = i;
+        renderBuilder();
+      });
+      builderSlotsEl.appendChild(el);
+    }
+    // Name / flavor + layer tiles reflect the selected slot
+    const curId     = deck[builder.selectedSlot] || 'plain';
+    const curSkin   = skins[builder.selectedSlot] || DEFAULT_SKIN;
+    const curType   = DIE_TYPES[curId];
+    builderFlavorEl.textContent = curType ? curType.flavor : '';
+    layerDiceValEl.textContent  = curType ? curType.name : '—';
+    if (layerSkinValEl) layerSkinValEl.textContent = SKINS[curSkin] ? SKINS[curSkin].name : SKINS[DEFAULT_SKIN].name;
+  }
+
+  function assignToSelectedSlot(typeId) {
+    // Enforce per-deck uniqueness: if the chosen type already sits in a
+    // different slot of this deck, swap — that slot receives whatever the
+    // selected slot held. Net effect: reordering with no duplicates.
+    const deck      = builder.draftDecks[builder.deckIdx];
+    const targetIdx = builder.selectedSlot;
+    const existing  = deck.indexOf(typeId);
+    if (existing === targetIdx) return;
+    if (existing !== -1) {
+      deck[existing] = deck[targetIdx];
+    }
+    deck[targetIdx] = typeId;
+    renderBuilder();
+  }
+
+  function openCollectionBrowser() {
+    browserActive = true;
+    const deck     = builder.draftDecks[builder.deckIdx];
+    const current  = deck[builder.selectedSlot] || 'plain';
+    const catalog  = DIE_TYPE_ORDER;
+    const currentOrderIdx = Math.max(0, catalog.indexOf(current));
+    collectionCounterEl.textContent = (currentOrderIdx + 1) + ' / ' + catalog.length;
+
+    collectionGridEl.innerHTML = '';
+    catalog.forEach((typeId, idx) => {
+      const type     = DIE_TYPES[typeId];
+      const owned    = ownsDie(typeId);
+      const isCur    = typeId === current;
+
+      const el = document.createElement('div');
+      el.className = 'collection-entry'
+                   + (isCur   ? ' current' : '')
+                   + (!owned  ? ' locked'  : '');
+
+      if (owned) {
+        el.appendChild(makePipCanvas(1, false, type && type.color));
+        const label = document.createElement('div');
+        label.className = 'entry-label';
+        label.textContent = type.name;
+        el.appendChild(label);
+        el.addEventListener('click', () => {
+          assignToSelectedSlot(typeId);
+          closeCollectionBrowser();
+        });
+      } else {
+        const sil = document.createElement('div');
+        sil.className = 'collection-silhouette';
+        sil.textContent = '???';
+        el.appendChild(sil);
+        const label = document.createElement('div');
+        label.className = 'entry-label';
+        label.textContent = '???';
+        el.appendChild(label);
+      }
+
+      collectionGridEl.appendChild(el);
+    });
+
+    showOverlay(collectionEl);
+  }
+
+  function closeCollectionBrowser() {
+    browserActive = false;
+    showOverlay(deckBuilderEl);
+  }
+
+  function openSkinBrowser() {
+    browserActive = true;
+    const curSkin = builder.draftSkins[builder.deckIdx][builder.selectedSlot] || DEFAULT_SKIN;
+    const deck    = builder.draftDecks[builder.deckIdx];
+    const typeId  = deck[builder.selectedSlot] || 'plain';
+    const type    = DIE_TYPES[typeId];
+
+    skinGridEl.innerHTML = '';
+    SKIN_ORDER.forEach(skinId => {
+      const skin = SKINS[skinId];
+      const isCur = skinId === curSkin;
+      const el = document.createElement('div');
+      el.className = 'collection-entry' + (isCur ? ' current' : '');
+      // Idle preview so each skin's trait icon for the slot's die shows
+      // through — that's the most visually distinctive face of the skin.
+      el.appendChild(makePipCanvas(1, false, type && type.color, skinId, { idle: true, typeId }));
+      const label = document.createElement('div');
+      label.className = 'entry-label';
+      label.textContent = skin.name;
+      el.appendChild(label);
+      el.addEventListener('click', () => {
+        builder.draftSkins[builder.deckIdx][builder.selectedSlot] = skinId;
+        closeSkinBrowser();
+        renderBuilder();
+      });
+      skinGridEl.appendChild(el);
+    });
+    showOverlay(skinBrowserEl);
+  }
+  function closeSkinBrowser() {
+    browserActive = false;
+    showOverlay(deckBuilderEl);
+  }
+
+  function saveBuilder() {
+    decks = builder.draftDecks.map(d => [...d]);
+    deckSkins = builder.draftSkins.map(d => [...d]);
+    activeDeckIdx = builder.deckIdx;
+    saveJSON(DECKS_KEY, decks);
+    saveJSON(DECK_SKINS_KEY, deckSkins);
+    saveJSON(ACTIVE_DECK_KEY, activeDeckIdx);
+    // Re-seed the in-memory dice with the saved deck so the next Play uses it.
+    resetGame();
+    showOverlay(homeScreen);
+  }
+
+  function cancelBuilder() {
+    showOverlay(homeScreen);
+  }
+
+  document.getElementById('home-deck-builder').addEventListener('click', openDeckBuilder);
+  document.getElementById('home-shrine').addEventListener('click', openShrine);
+  document.getElementById('shrine-back').addEventListener('click', () => showOverlay(homeScreen));
+  document.getElementById('shrine-summon').addEventListener('click', openSummon);
+  document.getElementById('summon-back').addEventListener('click', openShrine);
+  summonSingleBtn.addEventListener('click', () => doPull(1));
+  summonTenBtn.addEventListener('click',    () => doPull(10));
+  document.getElementById('reveal-continue').addEventListener('click', closeReveal);
+  revealNextBtn.addEventListener('click', advanceReveal);
+  revealSkipBtn.addEventListener('click', skipReveal);
+  document.getElementById('shrine-forge').addEventListener('click', openForge);
+  document.getElementById('forge-back').addEventListener('click', openShrine);
+  document.getElementById('forge-sheet-cancel').addEventListener('click', closeForgeSheet);
+  document.getElementById('forge-sheet-confirm').addEventListener('click', confirmForge);
+  document.getElementById('shrine-sacrifice').addEventListener('click', openSacrifice);
+  document.getElementById('sacrifice-back').addEventListener('click', openShrine);
+  sacSingleBtn.addEventListener('click', () => doSacrifice(1));
+  sacTenBtn.addEventListener('click',    () => doSacrifice(10));
+  document.getElementById('sacrifice-continue').addEventListener('click', closeSacrificeResult);
+  document.getElementById('shrine-inventory').addEventListener('click', openInventory);
+  document.getElementById('dev-grant-chips').addEventListener('click', () => {
+    setChips(chips + 1000);
+    if (summonEl.classList.contains('show')) refreshSummonButtons();
+  });
+  document.getElementById('inv-back').addEventListener('click', openShrine);
+  sheetMinusEl.addEventListener('click', () => stepSacrifice(-1));
+  sheetPlusEl.addEventListener('click',  () => stepSacrifice(+1));
+  document.getElementById('sheet-cancel').addEventListener('click', closeSacrificeSheet);
+  document.getElementById('sheet-confirm').addEventListener('click', confirmSacrifice);
+  document.getElementById('builder-cancel').addEventListener('click', cancelBuilder);
+  document.getElementById('builder-confirm').addEventListener('click', saveBuilder);
+  document.getElementById('builder-deck').addEventListener('click', () => {
+    builder.deckIdx = (builder.deckIdx + 1) % builder.draftDecks.length;
+    builder.selectedSlot = 0;
+    renderBuilder();
+  });
+  document.getElementById('layer-dice').addEventListener('click', openCollectionBrowser);
+  document.getElementById('collection-back').addEventListener('click', closeCollectionBrowser);
+  document.getElementById('layer-skin').addEventListener('click', openSkinBrowser);
+  document.getElementById('skin-back').addEventListener('click', closeSkinBrowser);
+  // AURA is scaffolding only — disable for now.
+  document.getElementById('layer-aura').disabled = true;
+
+  // Sliders — update audioConfig + display values live
+  ['music', 'sfx', 'vo'].forEach(key => {
+    const slider = document.getElementById('slider-' + key);
+    const valEl  = document.getElementById('val-' + key);
+    slider.addEventListener('input', () => {
+      audioConfig[key] = parseInt(slider.value, 10);
+      valEl.textContent = slider.value;
+    });
+  });
+
+  // ─── Init ─────────────────────────────────────────────────────────────
+  requestAnimationFrame(() => {
+    resizeRenderer();
+    dice.forEach(layoutDie);
+    refreshAllSlotBadges();
+    refreshChipsUI();
+    updateStrip({});
+    animate();
+
+    refreshHomeUsername();
+    if (!username) {
+      showOverlay(nameEntry);
+      nameInput.focus();
+    } else {
+      showOverlay(homeScreen);
+    }
+  });
+  </script>
+</body>
+</html>
