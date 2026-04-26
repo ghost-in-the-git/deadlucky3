@@ -2277,6 +2277,20 @@
     6: { x: -Math.PI/2, y: 0,           z: 0 },
   };
 
+  // Extra full rotations (multiples of 2π) added per axis so the tween
+  // naturally arrives at each face rather than spinning randomly.
+  // Faces 1 and 6 are X-dominant (tip forward / backward); the rest are
+  // Y-dominant (turn left / right / spin). Negative values go in reverse.
+  const _2PI = Math.PI * 2;
+  const FACE_ROLL_EXTRA = {
+    1: { x:  2, y:  1 },   // tips forward
+    2: { x:  1, y:  2 },   // returns to front
+    3: { x:  1, y: -2 },   // turns left
+    4: { x:  1, y:  2 },   // turns right
+    5: { x:  1, y:  2 },   // flips to back
+    6: { x: -2, y:  1 },   // tips backward
+  };
+
   const GEO = new THREE.BoxGeometry(1, 1, 1);
 
   function makeDieMesh(_tint = 0xffffff, skinId = DEFAULT_SKIN, typeId = null) {
@@ -2617,17 +2631,19 @@
     if (!Number.isFinite(finalFace) || finalFace < 1 || finalFace > 6) finalFace = originalFace;
 
     const target  = FACE_TOWARD_CAMERA[finalFace];
+    const extra   = FACE_ROLL_EXTRA[finalFace];
     const r0      = { x: die.mesh.rotation.x, y: die.mesh.rotation.y, z: die.mesh.rotation.z };
-    const spins   = (2 + Math.floor(Math.random() * 2)) * Math.PI * 2;
+    const destX   = target.x + extra.x * _2PI;
+    const destY   = target.y + extra.y * _2PI;
 
     die._tweening = true;
     await tween({
       duration: 700,
       ease: easeOut,
       onUpdate: t => {
-        die.mesh.rotation.x = r0.x + (target.x + spins       - r0.x) * t;
-        die.mesh.rotation.y = r0.y + (target.y + spins * 0.8 - r0.y) * t;
-        die.mesh.rotation.z = r0.z + (target.z               - r0.z) * t;
+        die.mesh.rotation.x = r0.x + (destX - r0.x) * t;
+        die.mesh.rotation.y = r0.y + (destY - r0.y) * t;
+        die.mesh.rotation.z = r0.z + (target.z - r0.z) * t;
       },
     });
     die.mesh.rotation.set(target.x, target.y, target.z);
