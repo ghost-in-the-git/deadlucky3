@@ -3212,7 +3212,7 @@
       el.className = 'collection-entry inv-entry' + (!owned ? ' locked' : '');
 
       if (owned) {
-        el.appendChild(makePipCanvas(1, false, type && type.color));
+        el.appendChild(makePipCanvas(1, false, type && type.color, DEFAULT_SKIN, { idle: true, typeId }));
         const lbl = document.createElement('div');
         lbl.className = 'entry-label';
         lbl.textContent = type.name;
@@ -3390,7 +3390,7 @@
       const type = DIE_TYPES[r.typeId];
       const el = document.createElement('div');
       el.className = 'reveal-entry' + (r.isNew ? ' new' : '');
-      el.appendChild(makePipCanvas(1, false, type && type.color));
+      el.appendChild(makePipCanvas(1, false, type && type.color, DEFAULT_SKIN, { idle: true, typeId: r.typeId }));
       const lbl = document.createElement('div');
       lbl.className = 'entry-label';
       lbl.textContent = type.name;
@@ -3450,7 +3450,7 @@
       const type = DIE_TYPES[typeId];
       const card = document.createElement('div');
       card.className = 'forge-card';
-      card.appendChild(makePipCanvas(1, false, type && type.color));
+      card.appendChild(makePipCanvas(1, false, type && type.color, DEFAULT_SKIN, { idle: true, typeId }));
       const lbl = document.createElement('div');
       lbl.className = 'entry-label';
       lbl.textContent = type.name;
@@ -3708,7 +3708,7 @@
       const type = DIE_TYPES[r.typeId];
       const el = document.createElement('div');
       el.className = 'reveal-entry sacrificed';
-      el.appendChild(makePipCanvas(1, false, type && type.color));
+      el.appendChild(makePipCanvas(1, false, type && type.color, DEFAULT_SKIN, { idle: true, typeId: r.typeId }));
       const lbl = document.createElement('div');
       lbl.className = 'entry-label';
       lbl.textContent = type.name;
@@ -3924,7 +3924,7 @@
                    + (!owned  ? ' locked'  : '');
 
       if (owned) {
-        el.appendChild(makePipCanvas(1, false, type && type.color));
+        el.appendChild(makePipCanvas(1, false, type && type.color, DEFAULT_SKIN, { idle: true, typeId }));
         const label = document.createElement('div');
         label.className = 'entry-label';
         label.textContent = type.name;
