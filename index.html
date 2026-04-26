@@ -577,6 +577,13 @@
       font-weight: 700;
       color: rgba(0, 0, 0, 0.72);
       text-shadow: 0 1px 0 rgba(255, 255, 255, 0.35);
+      overflow: hidden;
+    }
+    .deck-mini-die canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+      border-radius: 5px;
     }
     .deck-mini-die.empty {
       background: transparent;
@@ -3547,19 +3554,20 @@
 
   function renderDeckCarousel() {
     deckTrackEl.innerHTML = '';
-    decks.forEach((deck, i) => {
+    decks.forEach((deck, di) => {
       const card = document.createElement('div');
       card.className = 'carousel-card deck-card';
       const grid = document.createElement('div');
       grid.className = 'deck-mini-grid';
+      const skins = deckSkins[di];
       for (let s = 0; s < N; s++) {
         const slot = document.createElement('div');
         slot.className = 'deck-mini-die';
         const typeId = deck[s];
-        const type = typeId && DIE_TYPES[typeId];
+        const type   = typeId && DIE_TYPES[typeId];
         if (type) {
-          slot.style.background = '#' + type.color.toString(16).padStart(6, '0');
-          slot.textContent = type.badge || '';
+          const skinId = (skins && skins[s]) || DEFAULT_SKIN;
+          slot.appendChild(makePipCanvas(1, false, type.color, skinId, { idle: true, typeId }));
         } else {
           slot.classList.add('empty');
           slot.textContent = '—';
@@ -3569,7 +3577,7 @@
       card.appendChild(grid);
       const t = document.createElement('div');
       t.className = 'deck-title';
-      t.textContent = 'Deck ' + (i + 1);
+      t.textContent = 'Deck ' + (di + 1);
       card.appendChild(t);
       deckTrackEl.appendChild(card);
     });
