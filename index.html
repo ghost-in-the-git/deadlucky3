@@ -2635,6 +2635,7 @@
     die.face = finalFace;
     die.rolledFace = finalFace;
     die.hasRolled = true; // first roll permanently retires the idle trait icon
+    showFace(die, finalFace);   // swap face-1 material from trait icon → pip now that hasRolled is true
     game.session.lastRolledFace = finalFace;
 
     // Deferred side-effects run AFTER the rotation tween so the roller
