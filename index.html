@@ -1819,7 +1819,6 @@
   // checks `ctx.self === ctx.rolling` to decide whether it's the one rolling.
   // Moth is the lone "passive listener" that fires on anyone's roll.
   const DIE_TYPES = {
-    plain:    { id: 'plain',    name: 'Plain',     color: 0xf0ede8, badge: '',    flavor: 'Just a normal die.' },
     lucky:    { id: 'lucky',    name: 'Lucky',     color: 0xf5c542, badge: 'LCK', flavor: '+1 luck on roll.',
                 onRoll: ctx => {
                   if (ctx.self !== ctx.rolling) return;
@@ -1945,8 +1944,8 @@
   };
   // Catalog order — starter collection = first 9.
   const DIE_TYPE_ORDER = [
-    'plain', 'lucky', 'moth', 'flight', 'sun', 'moon', 'angel', 'demon', 'reaper',
-    'copycat', 'dagger', 'sniper', 'gambler', 'vampire', 'lostLove', 'snake', 'trinity',
+    'gambler', 'lucky', 'moth', 'flight', 'sun', 'moon', 'angel', 'demon', 'reaper',
+    'copycat', 'dagger', 'sniper', 'vampire', 'lostLove', 'snake', 'trinity',
   ];
   const STARTER_COLLECTION = DIE_TYPE_ORDER.slice(0, 9);
 
@@ -2353,7 +2352,7 @@
   // Each die instance carries a typeId (from the active deck slot) and a
   // mutable per-session state bag. Hooks read/write state; nothing does yet.
   for (let i = 0; i < N; i++) {
-    const typeId = currentDeck()[i] || 'plain';
+    const typeId = currentDeck()[i] || 'gambler';
     const skinId = currentDeckSkins()[i] || DEFAULT_SKIN;
     const mesh   = makeDieMesh(DIE_TYPES[typeId] && DIE_TYPES[typeId].color, skinId, typeId);
     const die = {
@@ -3031,7 +3030,7 @@
     const deckNow = currentDeck();
     const skinsNow = currentDeckSkins();
     dice.forEach((die, i) => {
-      const typeId  = deckNow[i] || 'plain';
+      const typeId  = deckNow[i] || 'gambler';
       die.typeId    = typeId;
       die.skinId    = skinsNow[i] || DEFAULT_SKIN;
       die.type      = DIE_TYPES[typeId];
@@ -3855,7 +3854,7 @@
     const deck  = builder.draftDecks[builder.deckIdx];
     const skins = builder.draftSkins[builder.deckIdx];
     for (let i = 0; i < N; i++) {
-      const typeId = deck[i] || 'plain';
+      const typeId = deck[i] || 'gambler';
       const skinId = skins[i] || DEFAULT_SKIN;
       const type   = DIE_TYPES[typeId];
       const el = document.createElement('div');
@@ -3874,7 +3873,7 @@
       builderSlotsEl.appendChild(el);
     }
     // Name / flavor + layer tiles reflect the selected slot
-    const curId     = deck[builder.selectedSlot] || 'plain';
+    const curId     = deck[builder.selectedSlot] || 'gambler';
     const curSkin   = skins[builder.selectedSlot] || DEFAULT_SKIN;
     const curType   = DIE_TYPES[curId];
     builderFlavorEl.textContent = curType ? curType.flavor : '';
@@ -3900,7 +3899,7 @@
   function openCollectionBrowser() {
     browserActive = true;
     const deck     = builder.draftDecks[builder.deckIdx];
-    const current  = deck[builder.selectedSlot] || 'plain';
+    const current  = deck[builder.selectedSlot] || 'gambler';
     const catalog  = DIE_TYPE_ORDER;
     const currentOrderIdx = Math.max(0, catalog.indexOf(current));
     collectionCounterEl.textContent = (currentOrderIdx + 1) + ' / ' + catalog.length;
@@ -3952,7 +3951,7 @@
     browserActive = true;
     const curSkin = builder.draftSkins[builder.deckIdx][builder.selectedSlot] || DEFAULT_SKIN;
     const deck    = builder.draftDecks[builder.deckIdx];
-    const typeId  = deck[builder.selectedSlot] || 'plain';
+    const typeId  = deck[builder.selectedSlot] || 'gambler';
     const type    = DIE_TYPES[typeId];
 
     skinGridEl.innerHTML = '';
