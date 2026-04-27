@@ -1334,6 +1334,92 @@
       font-size: 1.1rem;
       letter-spacing: 0.1em;
     }
+
+    /* ─── Research ───────────────────────────────────────────────────────── */
+    .research-screen {
+      justify-content: flex-start;
+      padding: 18px 16px;
+      gap: 14px;
+    }
+    .research-scroll {
+      width: min(360px, 94vw);
+      overflow-y: auto;
+      flex: 1 1 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      padding-bottom: 16px;
+    }
+    .research-section-label {
+      font-size: 0.58rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--ink-dim);
+      padding: 10px 0 5px;
+      border-bottom: 1px solid var(--line);
+      margin-bottom: 2px;
+    }
+    .research-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 5px 0;
+      min-width: 0;
+    }
+    .research-label {
+      font-size: 0.58rem;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: var(--ink);
+      flex: 0 1 140px;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .research-bar-wrap {
+      flex: 1 1 auto;
+      height: 5px;
+      background: var(--line);
+      border-radius: 3px;
+      overflow: hidden;
+      min-width: 30px;
+    }
+    .research-bar-fill {
+      height: 100%;
+      background: #27ae60;
+      border-radius: 3px;
+      transition: width 0.25s;
+    }
+    .research-bar-fill.complete { background: #f5c542; }
+    .research-level {
+      font-size: 0.52rem;
+      letter-spacing: 0.06em;
+      color: var(--ink-dim);
+      flex: 0 0 30px;
+      text-align: right;
+      white-space: nowrap;
+    }
+    .research-claim {
+      background: transparent;
+      border: 1px solid var(--line);
+      color: var(--ink-dim);
+      border-radius: 4px;
+      padding: 3px 7px;
+      font-family: inherit;
+      font-size: 0.48rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      cursor: not-allowed;
+      flex: 0 0 auto;
+      opacity: 0.35;
+    }
+    .research-claim.owed {
+      border-color: #f5c542;
+      color: #f5c542;
+      cursor: pointer;
+      opacity: 1;
+    }
   </style>
 </head>
 <body>
@@ -1382,6 +1468,7 @@
     <button class="menu-btn primary" id="home-play">Play</button>
     <button class="menu-btn" id="home-deck-builder">Deck Builder</button>
     <button class="menu-btn" id="home-shrine">Shrine</button>
+    <button class="menu-btn" id="home-research">Research</button>
     <button class="menu-btn" id="home-options">Options</button>
   </div>
 
@@ -1716,6 +1803,15 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+  <!-- Research screen -->
+  <div class="overlay research-screen" id="research-screen" style="background: #000;">
+    <div class="shrine-topbar">
+      <button class="shrine-back" id="research-back" aria-label="Back">←</button>
+      <span class="shrine-title">Research</span>
+    </div>
+    <div class="research-scroll" id="research-scroll"></div>
+  </div>
+
   <script>
   // ─── Constants ────────────────────────────────────────────────────────
   const N = 9;
@@ -1960,9 +2056,11 @@
   const DECKS_KEY       = 'dl_decks';
   const ACTIVE_DECK_KEY = 'dl_active_deck';
   const CHIPS_KEY       = 'dl_chips';
-  const SHARDS_KEY      = 'dl_shards';
+  const SHARDS_KEY       = 'dl_shards';
   const FORGE_ROSTER_KEY = 'dl_forge_roster';
   const DECK_SKINS_KEY   = 'dl_deck_skins';
+  const RESEARCH_DAILY_KEY    = 'dl_research_daily';
+  const RESEARCH_LIFETIME_KEY = 'dl_research_lifetime';
 
   // Economy constants
   const SUMMON_COST_SINGLE = 200;
@@ -1983,6 +2081,79 @@
     }
   }
   const saveJSON = (key, val) => localStorage.setItem(key, JSON.stringify(val));
+
+  // ─── Research data ────────────────────────────────────────────────────
+  const RESEARCH_LEVEL_SIZE    = 100;
+  const RESEARCH_CLAIM_REWARD  = 500;
+
+  const DAILY_GOALS = [
+    { id: 'rolls',      label: 'Roll 300 dice',       target: 300 },
+    { id: 'points',     label: 'Score 30,000 pts',    target: 30000 },
+    { id: 'summons',    label: 'Summon 1 die',         target: 1 },
+    { id: 'sacrifices', label: 'Sacrifice 1 die',      target: 1 },
+  ];
+
+  const LIFETIME_STATS = [
+    { id: 'rolls',          label: 'Dice rolls' },
+    { id: 'combos',         label: 'Combos' },
+    { id: 'returns',        label: 'Returns' },
+    { id: 'matches',        label: 'Matches' },
+    { id: 'triggers',       label: 'Triggers' },
+    { id: 'luck',           label: 'Luck gained' },
+    { id: 'points',         label: 'Points scored' },
+    { id: 'gamesCompleted', label: 'Games completed' },
+    { id: 'summons',        label: 'Dice summoned' },
+    { id: 'sacrifices',     label: 'Dice sacrificed' },
+    { id: 'forged',         label: 'Dice forged' },
+    { id: 'skinsUnlocked',  label: 'Skins unlocked' },
+    { id: 'top1000',        label: 'Top 1000 finishes' },
+    { id: 'top100',         label: 'Top 100 finishes' },
+    { id: 'top1',           label: 'Top 1 finishes' },
+  ];
+
+  function _freshDaily() {
+    return {
+      date: todayUTCKey(),
+      rolls: 0, points: 0, summons: 0, sacrifices: 0,
+      claimed: { rolls: false, points: false, summons: false, sacrifices: false },
+    };
+  }
+  function _freshLifetime() {
+    return {
+      rolls: 0, combos: 0, returns: 0, matches: 0, triggers: 0,
+      luck: 0, points: 0, gamesCompleted: 0, summons: 0, sacrifices: 0,
+      forged: 0, skinsUnlocked: 0, top1000: 0, top100: 0, top1: 0,
+      claimedLevels: {},
+    };
+  }
+
+  let researchDaily    = (() => {
+    const d = loadJSON(RESEARCH_DAILY_KEY, null);
+    return (d && d.date === todayUTCKey()) ? d : _freshDaily();
+  })();
+  let researchLifetime = (() => {
+    const lt = loadJSON(RESEARCH_LIFETIME_KEY, null);
+    if (!lt || typeof lt !== 'object') return _freshLifetime();
+    if (!lt.claimedLevels) lt.claimedLevels = {};
+    return lt;
+  })();
+  saveJSON(RESEARCH_DAILY_KEY,    researchDaily);
+  saveJSON(RESEARCH_LIFETIME_KEY, researchLifetime);
+
+  function saveResearchDaily()    { saveJSON(RESEARCH_DAILY_KEY,    researchDaily); }
+  function saveResearchLifetime() { saveJSON(RESEARCH_LIFETIME_KEY, researchLifetime); }
+
+  function bumpDailyResearch(key, amount = 1) {
+    if (researchDaily.date !== todayUTCKey()) {
+      researchDaily = _freshDaily();
+    }
+    researchDaily[key] = (researchDaily[key] || 0) + amount;
+    saveResearchDaily();
+  }
+  function bumpLifetimeResearch(key, amount = 1) {
+    researchLifetime[key] = (researchLifetime[key] || 0) + amount;
+    saveResearchLifetime();
+  }
 
   // Inventory is a { typeId: count } map. Migrate from legacy array if needed.
   let inventory = loadJSON(INVENTORY_KEY, null);
@@ -2566,6 +2737,8 @@
     game.selectedDie = null;
     game.rolledDie = dieId;
     game.rolls++;
+    bumpDailyResearch('rolls');
+    bumpLifetimeResearch('rolls');
     setSlotClass(slotIdx, 'rolled');
 
     // 1) Pick a random face. 2) Broadcast onRoll to every die — each hook
@@ -2909,6 +3082,16 @@
 
   function endSession(reason) {
     game.ended = true;
+    // Flush session stats into lifetime + daily research.
+    bumpLifetimeResearch('combos',   game.combos);
+    bumpLifetimeResearch('returns',  game.totalReturns);
+    bumpLifetimeResearch('matches',  game.matches);
+    bumpLifetimeResearch('triggers', game.triggers);
+    bumpLifetimeResearch('luck',     game.luck);
+    bumpLifetimeResearch('points',   game.totalScore);
+    bumpDailyResearch('points',      game.totalScore);
+    if (reason === 'cap') bumpLifetimeResearch('gamesCompleted');
+
     sumUsernameEl.textContent = username || '—';
     sumScoreEl.textContent    = game.totalScore;
     sumReturnsEl.textContent  = game.totalReturns;
@@ -3107,7 +3290,8 @@
      shrineEl, inventoryEl, summonEl, revealEl, revealSingleEl, forgeEl,
      modeCarouselEl, deckCarouselEl,
      sacrificeScreenEl, sacrificeResultEl,
-     document.getElementById('skin-browser')]
+     document.getElementById('skin-browser'),
+     document.getElementById('research-screen')]
       .forEach(o => o && o.classList.remove('show'));
     if (el) el.classList.add('show');
     game.paused = el != null;
@@ -3146,6 +3330,118 @@
     if (invSubEl) invSubEl.textContent = totalInventoryCount() + ' dice held';
     if (sacSubEl) sacSubEl.textContent = totalDupes() + ' dupes available';
   }
+  // ─── Research ─────────────────────────────────────────────────────────
+  const researchScrollEl = document.getElementById('research-scroll');
+
+  function makeResearchRow(labelText, value, pct, levelText, owed, onClaim) {
+    const row = document.createElement('div');
+    row.className = 'research-row';
+
+    const lbl = document.createElement('div');
+    lbl.className = 'research-label';
+    lbl.textContent = labelText;
+    row.appendChild(lbl);
+
+    const barWrap = document.createElement('div');
+    barWrap.className = 'research-bar-wrap';
+    const fill = document.createElement('div');
+    fill.className = 'research-bar-fill' + (pct >= 1 ? ' complete' : '');
+    fill.style.width = Math.min(pct, 1) * 100 + '%';
+    barWrap.appendChild(fill);
+    row.appendChild(barWrap);
+
+    const lvl = document.createElement('div');
+    lvl.className = 'research-level';
+    lvl.textContent = levelText;
+    row.appendChild(lvl);
+
+    const btn = document.createElement('button');
+    btn.className = 'research-claim' + (owed > 0 ? ' owed' : '');
+    btn.disabled  = owed <= 0;
+    btn.textContent = owed > 1 ? 'Claim ×' + owed : 'Claim';
+    btn.addEventListener('click', onClaim);
+    row.appendChild(btn);
+
+    return row;
+  }
+
+  function renderResearch() {
+    if (researchDaily.date !== todayUTCKey()) {
+      researchDaily = _freshDaily();
+      saveResearchDaily();
+    }
+    // Keep skinsUnlocked in sync with the live catalog.
+    researchLifetime.skinsUnlocked = Math.max(researchLifetime.skinsUnlocked, SKIN_ORDER.length);
+
+    researchScrollEl.innerHTML = '';
+
+    // — Daily —
+    const dailyHdr = document.createElement('div');
+    dailyHdr.className = 'research-section-label';
+    dailyHdr.textContent = 'Daily';
+    researchScrollEl.appendChild(dailyHdr);
+
+    DAILY_GOALS.forEach(goal => {
+      const raw       = researchDaily[goal.id] || 0;
+      const value     = Math.min(raw, goal.target);
+      const pct       = value / goal.target;
+      const complete  = value >= goal.target;
+      const claimed   = researchDaily.claimed[goal.id];
+      const owed      = complete && !claimed ? 1 : 0;
+
+      const row = makeResearchRow(
+        goal.label + ': ' + raw.toLocaleString() + ' / ' + goal.target.toLocaleString(),
+        value, pct,
+        complete ? 'Lv 1' : 'Lv 0',
+        owed,
+        () => {
+          if (!complete || researchDaily.claimed[goal.id]) return;
+          researchDaily.claimed[goal.id] = true;
+          saveResearchDaily();
+          setChips(chips + RESEARCH_CLAIM_REWARD);
+          renderResearch();
+        }
+      );
+      researchScrollEl.appendChild(row);
+    });
+
+    // — Lifetime —
+    const lifetimeHdr = document.createElement('div');
+    lifetimeHdr.className = 'research-section-label';
+    lifetimeHdr.textContent = 'Lifetime';
+    researchScrollEl.appendChild(lifetimeHdr);
+
+    LIFETIME_STATS.forEach(stat => {
+      const value         = researchLifetime[stat.id] || 0;
+      const level         = Math.floor(value / RESEARCH_LEVEL_SIZE);
+      const claimedLevels = researchLifetime.claimedLevels[stat.id] || 0;
+      const owed          = level - claimedLevels;
+      const pct           = (value % RESEARCH_LEVEL_SIZE) / RESEARCH_LEVEL_SIZE;
+
+      const row = makeResearchRow(
+        stat.label + ': ' + value.toLocaleString(),
+        value, pct,
+        'Lv ' + level,
+        owed,
+        () => {
+          const currentLevel   = Math.floor((researchLifetime[stat.id] || 0) / RESEARCH_LEVEL_SIZE);
+          const currentClaimed = researchLifetime.claimedLevels[stat.id] || 0;
+          if (currentLevel <= currentClaimed) return;
+          researchLifetime.claimedLevels[stat.id] = currentClaimed + 1;
+          saveResearchLifetime();
+          setChips(chips + RESEARCH_CLAIM_REWARD);
+          renderResearch();
+        }
+      );
+      researchScrollEl.appendChild(row);
+    });
+  }
+
+  function openResearch() {
+    renderResearch();
+    showOverlay(document.getElementById('research-screen'));
+  }
+
   function openShrine() {
     refreshCurrencyUI();
     refreshShrineSubs();
@@ -3232,6 +3528,8 @@
     removeFromInventory(typeId, qty);
     setChips(chips + qty * SACRIFICE_CHIPS);
     setShards(shards + qty * SACRIFICE_SHARDS);
+    bumpDailyResearch('sacrifices',    qty);
+    bumpLifetimeResearch('sacrifices', qty);
     closeSacrificeSheet();
     renderInventory();
   }
@@ -3263,6 +3561,8 @@
       addToInventory(typeId, 1);
       pullResults.push({ typeId, isNew, sacrificed: false });
     }
+    bumpDailyResearch('summons',    n);
+    bumpLifetimeResearch('summons', n);
     openRevealSingle(0);
   }
   // ─── One-at-a-time reveal with spinning 3D die ───────────────────────
@@ -3444,6 +3744,7 @@
     const { typeId } = forgeContext;
     setShards(shards - FORGE_COST_SHARDS);
     addToInventory(typeId, 1);
+    bumpLifetimeResearch('forged');
     closeForgeSheet();
     renderForge();
   }
@@ -3652,6 +3953,8 @@
     }
     setChips(chips + gainedChips);
     setShards(shards + gainedShards);
+    bumpDailyResearch('sacrifices',    sacrificeResults.length);
+    bumpLifetimeResearch('sacrifices', sacrificeResults.length);
     openSacrificeResult(gainedChips, gainedShards);
   }
   function openSacrificeResult(gChips, gShards) {
@@ -3964,6 +4267,8 @@
     showOverlay(homeScreen);
   }
 
+  document.getElementById('home-research').addEventListener('click', openResearch);
+  document.getElementById('research-back').addEventListener('click', () => showOverlay(homeScreen));
   document.getElementById('home-deck-builder').addEventListener('click', openDeckBuilder);
   document.getElementById('home-shrine').addEventListener('click', openShrine);
   document.getElementById('shrine-back').addEventListener('click', () => showOverlay(homeScreen));
