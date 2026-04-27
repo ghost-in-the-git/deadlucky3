@@ -152,7 +152,7 @@ up here" beat).
 > *"A Triple — three dice in a line with the same number, like those 3s on the
 > right. All three return."*
 
-- Optionally: right column (slots 2, 5, 8) briefly re-highlights
+- Right column (slots 2, 5, 8) briefly re-highlights with combo glow
 - Button: **Next**
 
 ---
@@ -161,7 +161,7 @@ up here" beat).
 > *"A Straight — three dice in a line with consecutive numbers. 1, 2, 3 along
 > the bottom — done."*
 
-- Optionally: bottom row (slots 6, 7, 8) briefly re-highlights
+- Bottom row (slots 6, 7, 8) briefly re-highlights with combo glow
 - Button: **Next**
 
 ---
@@ -194,7 +194,8 @@ up here" beat).
 ### CARD — Hand-off
 > *"OK, professor — real game now. Good luck."*
 
-- Button: **Play** → tutorial ends, real game begins from clean state
+- Button: **Play** → tutorial UI clears, player continues from the live tutorial
+  state (2 dice still on board at slots 1 and 4, 7 dice back in hand)
 
 ---
 
@@ -210,6 +211,4 @@ up here" beat).
 
 ## Remaining Before Implementation
 
-- Decide whether the re-highlight of triple/straight lines after the combo
-  explanation cards is worth the effort (nice to have, not critical)
-- Confirm the "Play" hand-off starts a fresh game (not continuing tutorial state)
+Nothing — all decisions confirmed. Ready to build.
