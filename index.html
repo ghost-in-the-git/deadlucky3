@@ -135,6 +135,12 @@
     .tile.occupied .tile-score { opacity: 1; }
     .tile.matched { border-color: var(--accent); border-style: solid; }
     .tile.combo { background: rgba(58, 120, 220, 0.55); }
+    @keyframes cross-pulse {
+      0%   { box-shadow: 0 0 0 2px #fff, 0 0 18px 4px rgba(255,255,255,0.7); }
+      60%  { box-shadow: 0 0 0 4px #fff, 0 0 32px 8px rgba(255,255,255,0.4); }
+      100% { box-shadow: none; }
+    }
+    .tile.combo-cross { animation: cross-pulse 1.2s ease-out forwards; }
     .tile.inspected { box-shadow: inset 0 0 0 2px rgba(255,255,255,0.65); }
 
     .slot.selected { border-color: var(--accent); border-style: solid; }
@@ -2259,11 +2265,17 @@
   const COMBO_MATCH    = 1;
   const COMBO_TRIPLE   = 3;
   const COMBO_STRAIGHT = 3;
+  const COMBO_CROSS    = 5;
 
   const LINES = [
     [0,1,2], [3,4,5], [6,7,8],   // rows
     [0,3,6], [1,4,7], [2,5,8],   // cols
     [0,4,8], [2,4,6],            // diagonals
+  ];
+  // Cross: two lines through centre that both qualify (triple or straight)
+  const CROSS_PATTERNS = [
+    [[3,4,5], [1,4,7]],  // + cross  (h-row × v-col through centre)
+    [[0,4,8], [2,4,6]],  // X cross  (both diagonals)
   ];
   const lineKey = line => line.join(',');
   const LINE_BY_KEY = {};
@@ -3085,7 +3097,7 @@
 
   // ─── Inspection ───────────────────────────────────────────────────────
   function lineFlagsAtTile(tileIdx) {
-    let inTriple = false, inStraight = false;
+    let inTriple = false, inStraight = false, inCross = false;
     for (const line of LINES) {
       if (!line.includes(tileIdx)) continue;
       const faces = line.map(j => board[j] == null ? null : effectiveFace(dice[board[j]]));
@@ -3093,7 +3105,15 @@
       if (isTripleFaces(faces))   inTriple   = true;
       if (isStraightFaces(faces)) inStraight = true;
     }
-    return { inTriple, inStraight };
+    for (const [lineA, lineB] of CROSS_PATTERNS) {
+      if (!lineA.includes(tileIdx) && !lineB.includes(tileIdx)) continue;
+      const fA = lineA.map(j => board[j] == null ? null : effectiveFace(dice[board[j]]));
+      const fB = lineB.map(j => board[j] == null ? null : effectiveFace(dice[board[j]]));
+      if (fA.some(f => f == null) || fB.some(f => f == null)) continue;
+      if ((isTripleFaces(fA) || isStraightFaces(fA)) && (isTripleFaces(fB) || isStraightFaces(fB)))
+        inCross = true;
+    }
+    return { inTriple, inStraight, inCross };
   }
 
   function activeLinesNow() {
@@ -3114,22 +3134,20 @@
 
   function comboAtTile(tileIdx) {
     const die = dice[board[tileIdx]];
-    const { inTriple, inStraight } = lineFlagsAtTile(tileIdx);
-    return COMBO_BASE
-         + (die.isMatch ? COMBO_MATCH : 0)
-         + (inTriple    ? COMBO_TRIPLE : 0)
-         + (inStraight  ? COMBO_STRAIGHT : 0);
+    const { inTriple, inStraight, inCross } = lineFlagsAtTile(tileIdx);
+    const lineBonus = inCross ? COMBO_CROSS
+                              : (inTriple ? COMBO_TRIPLE : 0) + (inStraight ? COMBO_STRAIGHT : 0);
+    return COMBO_BASE + (die.isMatch ? COMBO_MATCH : 0) + lineBonus;
   }
 
   // ─── Scoring pipeline ─────────────────────────────────────────────────
   // Shared by end-of-turn scoring, tile-score preview, and placed-die
   // inspection — so displayed numbers always match what actually scores.
   function buildScoreCtx(die, tileIdx, flags) {
-    const { isMatch = false, inTriple = false, inStraight = false } = flags || {};
-    const combo = COMBO_BASE
-                + (isMatch    ? COMBO_MATCH    : 0)
-                + (inTriple   ? COMBO_TRIPLE   : 0)
-                + (inStraight ? COMBO_STRAIGHT : 0);
+    const { isMatch = false, inTriple = false, inStraight = false, inCross = false } = flags || {};
+    const lineBonus = inCross ? COMBO_CROSS
+                              : (inTriple ? COMBO_TRIPLE : 0) + (inStraight ? COMBO_STRAIGHT : 0);
+    const combo = COMBO_BASE + (isMatch ? COMBO_MATCH : 0) + lineBonus;
     const face  = isMatch ? MATCH_FACE : die.rolledFace;
     const ctx = {
       die,
@@ -3140,7 +3158,7 @@
       combo,
       luck:      game.luck,
       flatBonus: 0,
-      isMatch, inTriple, inStraight,
+      isMatch, inTriple, inStraight, inCross,
       board,
       session:   game.session,
       fired:     false,
@@ -3358,6 +3376,16 @@
       }
       activeComboLines.add(lineKey(line));
     }
+    // Cross visual: pulse the centre tile if a cross fires
+    for (const [lineA, lineB] of CROSS_PATTERNS) {
+      const fA = lineA.map(j => board[j] == null ? null : effectiveFace(dice[board[j]]));
+      const fB = lineB.map(j => board[j] == null ? null : effectiveFace(dice[board[j]]));
+      if (fA.some(f => f == null) || fB.some(f => f == null)) continue;
+      if ((isTripleFaces(fA) || isStraightFaces(fA)) && (isTripleFaces(fB) || isStraightFaces(fB))) {
+        tileEls[4].classList.add('combo-cross');
+        setTimeout(() => tileEls[4].classList.remove('combo-cross'), 1200);
+      }
+    }
 
     refreshAllTilePreviews();
     inspectTile(tileIdx);
@@ -3385,17 +3413,30 @@
       if (isTripleFaces(faces))   tripleLines.push(line);
       if (isStraightFaces(faces)) straightLines.push(line);
     }
-    game.combos += tripleLines.length + straightLines.length;
+
+    // Detect cross combos: two lines through centre both qualifying
+    const crossTiles = new Set();
+    for (const [lineA, lineB] of CROSS_PATTERNS) {
+      const fA = lineA.map(j => snapshot[j] && snapshot[j].effectiveFace);
+      const fB = lineB.map(j => snapshot[j] && snapshot[j].effectiveFace);
+      if (fA.some(f => f == null) || fB.some(f => f == null)) continue;
+      if ((isTripleFaces(fA) || isStraightFaces(fA)) && (isTripleFaces(fB) || isStraightFaces(fB)))
+        [...lineA, ...lineB].forEach(i => crossTiles.add(i));
+    }
+
+    game.combos += tripleLines.length + straightLines.length + (crossTiles.size > 0 ? 1 : 0);
 
     const evalResult = snapshot.map((d, i) => {
       if (!d) return null;
-      const inTriple   = tripleLines.some(line => line.includes(i));
-      const inStraight = straightLines.some(line => line.includes(i));
+      const inCross    = crossTiles.has(i);
+      const inTriple   = !inCross && tripleLines.some(line => line.includes(i));
+      const inStraight = !inCross && straightLines.some(line => line.includes(i));
       return {
-        returning: d.isMatch || inTriple || inStraight,
+        returning: d.isMatch || inTriple || inStraight || inCross,
         isMatch:   d.isMatch,
         inTriple,
         inStraight,
+        inCross,
       };
     });
 
