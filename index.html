@@ -4036,44 +4036,44 @@
     { phase: 'card', cta: 'Next',
       dotTarget: () => document.querySelector('.score'),
       text: 'But it hasn\'t scored yet. Dice hold their points on the board until they return to your hand.' },
-    // 6 — Select die 2
-    { phase: 'action', lock: 'select-2',
-      text: 'Step one again — select your second die.',
-      hl: 'hand', dim: ['header', 'board', 'score'] },
-    // 7 — Roll die 2 (forced face 5)
-    { phase: 'action', lock: 'roll-2',
-      text: 'Roll it.',
-      hl: 'hand', dim: ['header', 'board', 'score'] },
-    // 8 — Place on slot 3
-    { phase: 'action', lock: 'place-2', target: 3,
-      text: 'One more. There\'s only one spot left — go ahead.',
-      hl: 'board', dim: ['header', 'score', 'hand'] },
-    // 9 — 7 dice came home
-    { phase: 'card', cta: 'Next',
-      dotTarget: () => document.getElementById('total-score'),
-      text: 'There we go. Seven dice came home — and your score jumped.' },
-    // 10 — 4 combo types intro
+    // 6 — 4 combo types intro
     { phase: 'card', cta: 'Next',
       text: 'Dice come back when they combo. There are four types.' },
-    // 11 — Match combo
+    // 7 — Match combo
     { phase: 'card', cta: 'Next',
       text: 'A Match — your roll equals the tile number. The die turns 9 and comes home.' },
-    // 12 — Triple combo
+    // 8 — Triple combo (board still showing 3s on right column)
     { phase: 'card', cta: 'Next', rehl: [2, 5, 8],
       text: 'A Triple — three dice in a line with the same number, like those 3s on the right. All three return.' },
-    // 13 — Straight combo
+    // 9 — Straight combo (board still showing 1,2,3 on bottom row)
     { phase: 'card', cta: 'Next', rehl: [6, 7, 8],
       text: 'A Straight — three dice in a line with consecutive numbers. 1, 2, 3 along the bottom — done.' },
-    // 14 — Cross combo
+    // 10 — Cross combo
     { phase: 'card', cta: 'Next',
       text: 'A Cross — two lines through the middle tile, both forming a combo at the same time. Rare. Pays well.' },
-    // 15 — The goal
+    // 11 — The goal
     { phase: 'card', cta: 'Next',
       dotTarget: () => document.getElementById('total-returns'),
       text: 'That\'s the game. Roll, place, combo, collect. You get 100 returns total — make every one count.' },
-    // 16 — Game over warning
+    // 12 — Game over warning
     { phase: 'card', cta: 'Next',
       text: 'One thing — if you ever place a die and nothing comes back, it\'s over. Don\'t let the board go cold.' },
+    // 13 — Select die 2
+    { phase: 'action', lock: 'select-2',
+      text: 'One more die to place — select it.',
+      hl: 'hand', dim: ['header', 'board', 'score'] },
+    // 14 — Roll die 2 (forced face 5)
+    { phase: 'action', lock: 'roll-2',
+      text: 'Roll it.',
+      hl: 'hand', dim: ['header', 'board', 'score'] },
+    // 15 — Place on slot 3
+    { phase: 'action', lock: 'place-2', target: 3,
+      text: 'One spot left — go ahead.',
+      hl: 'board', dim: ['header', 'score', 'hand'] },
+    // 16 — 7 dice came home
+    { phase: 'card', cta: 'Next',
+      dotTarget: () => document.getElementById('total-score'),
+      text: 'There we go. Seven dice came home — and your score jumped.' },
     // 17 — Hand-off
     { phase: 'card', cta: 'Play', final: true,
       text: 'OK, professor — real game now. Good luck.' },
