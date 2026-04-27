@@ -1733,17 +1733,25 @@
     }
     .tut-card {
       position: absolute;
-      inset: 0;
-      background: rgba(0, 0, 0, 0.96);
-      display: none;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: #0d0d0d;
+      border-top: 1px solid rgba(57, 231, 95, 0.18);
+      display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
       z-index: 60;
-      padding: 36px 28px;
-      gap: 28px;
+      padding: 22px 28px 32px;
+      gap: 18px;
+      transform: translateY(100%);
+      pointer-events: none;
+      transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
     }
-    .tut-card.show { display: flex; }
+    .tut-card.show {
+      transform: translateY(0);
+      pointer-events: auto;
+    }
     .tut-card-label {
       font-size: 0.58rem;
       letter-spacing: 0.22em;
@@ -1751,19 +1759,19 @@
       color: rgba(57, 231, 95, 0.7);
     }
     .tut-card-text {
-      font-size: 1.05rem;
-      letter-spacing: 0.04em;
+      font-size: 1rem;
+      letter-spacing: 0.03em;
       color: #fff;
       text-align: center;
-      line-height: 1.55;
-      max-width: 280px;
+      line-height: 1.5;
+      max-width: 300px;
     }
     .tut-card-cta {
       background: #39e75f;
       color: #000;
       border: none;
       border-radius: 26px;
-      padding: 14px 36px;
+      padding: 13px 36px;
       font-size: 0.82rem;
       font-weight: 900;
       letter-spacing: 0.18em;
