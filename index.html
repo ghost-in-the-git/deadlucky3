@@ -1698,39 +1698,7 @@
     }
 
     /* ── Tutorial ──────────────────────────────────────── */
-    .tut-hint {
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      background: rgba(0, 0, 0, 0.92);
-      border-top: 1px solid rgba(57, 231, 95, 0.35);
-      padding: 14px 16px 18px;
-      z-index: 50;
-      display: none;
-      align-items: center;
-      gap: 12px;
-    }
-    .tut-hint.show { display: flex; }
-    .tut-hint-text {
-      flex: 1;
-      font-size: 0.8rem;
-      letter-spacing: 0.04em;
-      color: #fff;
-      line-height: 1.45;
-    }
-    .tut-skip-btn {
-      flex: 0 0 auto;
-      background: transparent;
-      border: 1px solid rgba(255, 255, 255, 0.25);
-      color: rgba(255, 255, 255, 0.4);
-      border-radius: 6px;
-      padding: 6px 10px;
-      font-size: 0.58rem;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      cursor: pointer;
-    }
+    .tut-hint { display: none !important; }
     .tut-card {
       position: absolute;
       bottom: 0;
@@ -4152,18 +4120,21 @@
   }
 
   function tutShowHint(step) {
-    tutHintText.textContent = step.text;
-    tutHintEl.classList.add('show');
+    tutCardText.textContent = step.text;
+    tutCardCta.style.display = 'none';
+    tutCardSkip.style.display = '';
+    tutCardEl.classList.add('show');
     tutApplyClasses(step);
   }
 
   function tutHideHint() {
-    tutHintEl.classList.remove('show');
+    tutCardEl.classList.remove('show');
   }
 
   function tutShowCard(step) {
-    tutCardText.textContent = step.text;
-    tutCardCta.textContent  = step.cta || 'Next';
+    tutCardText.textContent   = step.text;
+    tutCardCta.textContent    = step.cta || 'Next';
+    tutCardCta.style.display  = '';
     tutCardSkip.style.display = step.final ? 'none' : '';
     tutCardEl.classList.add('show');
     game.paused = true;
