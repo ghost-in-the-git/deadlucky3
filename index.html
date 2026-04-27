@@ -114,13 +114,14 @@
 
     .tile-value {
       position: absolute;
-      top: 5px;
-      left: 6px;
-      width: 18px;
-      height: 18px;
+      inset: 12%;
+      width: 76%;
+      height: 76%;
       object-fit: contain;
-      opacity: 0.7;
+      opacity: 0.25;
+      pointer-events: none;
     }
+    .tile.occupied .tile-value { opacity: 0; }
 
     .tile-score {
       position: absolute;
