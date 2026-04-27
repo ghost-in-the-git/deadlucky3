@@ -1796,6 +1796,31 @@
       pointer-events: none !important;
       transition: opacity 0.25s;
     }
+    #tut-dot {
+      display: none;
+      position: absolute;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #fff;
+      z-index: 65;
+      pointer-events: none;
+      transform: translate(-50%, -50%);
+    }
+    #tut-dot.show {
+      display: block;
+      animation: tut-dot-pulse 1.2s ease-in-out infinite;
+    }
+    @keyframes tut-dot-pulse {
+      0%, 100% { opacity: 1;    box-shadow: 0 0 0 0px rgba(255,255,255,0.6); }
+      50%       { opacity: 0.75; box-shadow: 0 0 0 8px rgba(255,255,255,0);  }
+    }
+    @keyframes tut-rehl-flash {
+      0%   { box-shadow: 0 0 0 2px rgba(57,231,95,0.3); }
+      40%  { box-shadow: 0 0 0 4px rgba(57,231,95,0.9), 0 0 16px rgba(57,231,95,0.45); }
+      100% { box-shadow: none; }
+    }
+    .tut-rehl { animation: tut-rehl-flash 1.8s ease-in-out forwards; }
   </style>
 </head>
 <body>
@@ -2182,6 +2207,8 @@
   </div>
 
   <!-- Tutorial hint bar -->
+  <div id="tut-dot"></div>
+
   <div class="tut-hint" id="tut-hint">
     <span class="tut-hint-text" id="tut-hint-text"></span>
     <button class="tut-skip-btn" id="tut-skip">Skip</button>
@@ -3051,12 +3078,10 @@
     // Tutorial locks
     if (tut) {
       const lock = TUT_STEPS[tut.step] && TUT_STEPS[tut.step].lock;
-      if (lock === 'select') {
-        // allow selection only — block if they'd trigger a roll (already selected)
-        if (game.selectedDie === hand[slotIdx]) return;
-      } else if (lock === 'roll') {
-        // only allow re-tapping the already-selected die
-        if (game.selectedDie !== hand[slotIdx]) return;
+      if (lock === 'select-1' || lock === 'select-2') {
+        if (game.selectedDie === hand[slotIdx]) return; // block double-tap-to-roll
+      } else if (lock === 'roll-1' || lock === 'roll-2') {
+        if (game.selectedDie !== hand[slotIdx]) return; // only re-tap of selected die
       } else {
         return;
       }
@@ -3073,18 +3098,20 @@
       game.selectedDie = dieId;
       setSlotClass(slotIdx, 'selected');
       updateStrip({ face: 0, tile: 0, power: 0, combo: 0, luck: 0 });
-      if (tut && TUT_STEPS[tut.step].lock === 'select') advanceTutorial(); // → step 2 roll
+      const _tutLock = tut && TUT_STEPS[tut.step] && TUT_STEPS[tut.step].lock;
+      if (_tutLock === 'select-1' || _tutLock === 'select-2') advanceTutorial();
     }
   }
 
   function onBoardTap(tileIdx) {
     if (game.ended || game.paused || game.animating > 0) return;
 
-    // Tutorial: only the target tile is allowed during 'place' step
+    // Tutorial: only the target tile is allowed during placement steps
     if (tut) {
-      const lock = TUT_STEPS[tut.step] && TUT_STEPS[tut.step].lock;
-      if (lock !== 'place') return;
-      if (tileIdx !== TUT_TARGET_TILE) return;
+      const _tutStep = TUT_STEPS[tut.step];
+      const _tutLock = _tutStep && _tutStep.lock;
+      if (_tutLock !== 'place-1' && _tutLock !== 'place-2') return;
+      if (tileIdx !== _tutStep.target) return;
     }
 
     if (board[tileIdx] != null) {
@@ -3256,7 +3283,11 @@
     }
     let finalFace = Math.floor(ctx.face);
     if (!Number.isFinite(finalFace) || finalFace < 1 || finalFace > 6) finalFace = originalFace;
-    if (tut) finalFace = TUT_FORCE_FACE; // override all hooks during tutorial
+    if (tut) {
+      const _tutLock = TUT_STEPS[tut.step] && TUT_STEPS[tut.step].lock;
+      if (_tutLock === 'roll-1') finalFace = 3;
+      else if (_tutLock === 'roll-2') finalFace = 5;
+    }
 
     const target  = FACE_TOWARD_CAMERA[finalFace];
     const extra   = FACE_ROLL_EXTRA[finalFace];
@@ -3282,7 +3313,10 @@
     die.hasRolled = true; // first roll permanently retires the idle trait icon
     showFace(die, finalFace);   // swap face-1 material from trait icon → pip now that hasRolled is true
     game.session.lastRolledFace = finalFace;
-    if (tut && TUT_STEPS[tut.step] && TUT_STEPS[tut.step].lock === 'roll') advanceTutorial(); // → step 3 place
+    if (tut) {
+      const _tutLock = TUT_STEPS[tut.step] && TUT_STEPS[tut.step].lock;
+      if (_tutLock === 'roll-1' || _tutLock === 'roll-2') advanceTutorial();
+    }
 
     // Deferred side-effects run AFTER the rotation tween so the roller
     // visually settles before its power plays out. Currently only Reaper:
@@ -3390,6 +3424,9 @@
     refreshAllTilePreviews();
     inspectTile(tileIdx);
 
+    if (tut && TUT_STEPS[tut.step] && TUT_STEPS[tut.step].lock === 'place-1') {
+      advanceTutorial(); // → step 4 Match card
+    }
     if (hand.every(x => x == null)) await endOfTurn();
   }
 
@@ -3489,9 +3526,9 @@
 
     updateStrip({});
 
-    // Tutorial: after the first placement + return animation, show info cards
-    if (tut && TUT_STEPS[tut.step] && TUT_STEPS[tut.step].lock === 'place') {
-      advanceTutorial(); // → step 4 score card
+    // Tutorial: after second placement + return sweep, show "7 dice came home" card
+    if (tut && TUT_STEPS[tut.step] && TUT_STEPS[tut.step].lock === 'place-2') {
+      advanceTutorial(); // → step 9 "7 dice came home" card
       return;            // don't call endSession during tutorial
     }
 
@@ -3963,31 +4000,83 @@
   }
 
   // ─── Tutorial ────────────────────────────────────────────────────────────
-  const TUT_FORCE_FACE  = 4;   // forced roll value — 4 is in Gambler's even pool
-  const TUT_TARGET_TILE = 0;   // board tile index the player is guided to place on
+
+  const TUT_TILES = [3, 2, 6, 5, 1, 4, 6, 5, 1];
+  const TUT_PREPLACED = [
+    { boardSlot: 1, face: 4 },
+    { boardSlot: 2, face: 3 },
+    { boardSlot: 4, face: 5 },
+    { boardSlot: 5, face: 3 },
+    { boardSlot: 6, face: 1 },
+    { boardSlot: 7, face: 2 },
+    { boardSlot: 8, face: 3 },
+  ];
 
   const TUT_STEPS = [
-    // step 0 — welcome card (shown before game starts)
-    { phase: 'card',   text: 'Place dice on the board, score points, survive to 100 returns.',
-                       cta: 'Start', allowSkip: true },
-    // step 1 — select a die
-    { phase: 'action', lock: 'select', text: 'Tap a die in your hand to select it.',
-                       hl: 'hand', dim: ['header','board','score'] },
-    // step 2 — roll it
-    { phase: 'action', lock: 'roll',   text: 'Roll your die.',
-                       hl: 'hand', dim: ['header','board','score'] },
-    // step 3 — place it
-    { phase: 'action', lock: 'place',  text: 'Place it on the glowing tile.',
-                       hl: 'board', dim: ['header','score','hand'] },
-    // step 4 — score info card
-    { phase: 'card',   text: 'Face + Tile + Power + Combo = your score for the turn.',
-                       cta: 'Next' },
-    // step 5 — returns info card
-    { phase: 'card',   text: 'A matching die — or a row of three — returns to your hand. That\'s how you stay alive.',
-                       cta: 'Next' },
-    // step 6 — goal info card
-    { phase: 'card',   text: 'Reach 100 returns to win. Empty your hand and it\'s over.',
-                       cta: 'Play', final: true },
+    // 0 — Welcome card
+    { phase: 'card', cta: 'Let\'s go', allowSkip: true,
+      text: 'Welcome back, professor! Looks like you lost your memory in that last test — let\'s get you rolling again.' },
+    // 1 — Select die 1
+    { phase: 'action', lock: 'select-1',
+      text: 'Step one — tap a die in your hand to select it.',
+      hl: 'hand', dim: ['header', 'board', 'score'] },
+    // 2 — Roll die 1 (forced face 3)
+    { phase: 'action', lock: 'roll-1',
+      text: 'Good. Now tap it again to roll it.',
+      hl: 'hand', dim: ['header', 'board', 'score'] },
+    // 3 — Place on slot 0
+    { phase: 'action', lock: 'place-1', target: 0,
+      text: 'It\'s a 3. Top left — go on.',
+      hl: 'board', dim: ['header', 'score', 'hand'] },
+    // 4 — Match explained
+    { phase: 'card', cta: 'Next',
+      dotTarget: () => tileEls[0],
+      text: 'See how it turned into a 9? That means it matched the tile — that\'s a Match combo. Matched dice always come back.' },
+    // 5 — Points on tiles
+    { phase: 'card', cta: 'Next',
+      dotTarget: () => document.querySelector('.score'),
+      text: 'But it hasn\'t scored yet. Dice hold their points on the board until they return to your hand.' },
+    // 6 — Select die 2
+    { phase: 'action', lock: 'select-2',
+      text: 'Step one again — select your second die.',
+      hl: 'hand', dim: ['header', 'board', 'score'] },
+    // 7 — Roll die 2 (forced face 5)
+    { phase: 'action', lock: 'roll-2',
+      text: 'Roll it.',
+      hl: 'hand', dim: ['header', 'board', 'score'] },
+    // 8 — Place on slot 3
+    { phase: 'action', lock: 'place-2', target: 3,
+      text: 'One more. There\'s only one spot left — go ahead.',
+      hl: 'board', dim: ['header', 'score', 'hand'] },
+    // 9 — 7 dice came home
+    { phase: 'card', cta: 'Next',
+      dotTarget: () => document.getElementById('total-score'),
+      text: 'There we go. Seven dice came home — and your score jumped.' },
+    // 10 — 4 combo types intro
+    { phase: 'card', cta: 'Next',
+      text: 'Dice come back when they combo. There are four types.' },
+    // 11 — Match combo
+    { phase: 'card', cta: 'Next',
+      text: 'A Match — your roll equals the tile number. The die turns 9 and comes home.' },
+    // 12 — Triple combo
+    { phase: 'card', cta: 'Next', rehl: [2, 5, 8],
+      text: 'A Triple — three dice in a line with the same number, like those 3s on the right. All three return.' },
+    // 13 — Straight combo
+    { phase: 'card', cta: 'Next', rehl: [6, 7, 8],
+      text: 'A Straight — three dice in a line with consecutive numbers. 1, 2, 3 along the bottom — done.' },
+    // 14 — Cross combo
+    { phase: 'card', cta: 'Next',
+      text: 'A Cross — two lines through the middle tile, both forming a combo at the same time. Rare. Pays well.' },
+    // 15 — The goal
+    { phase: 'card', cta: 'Next',
+      dotTarget: () => document.getElementById('total-returns'),
+      text: 'That\'s the game. Roll, place, combo, collect. You get 100 returns total — make every one count.' },
+    // 16 — Game over warning
+    { phase: 'card', cta: 'Next',
+      text: 'One thing — if you ever place a die and nothing comes back, it\'s over. Don\'t let the board go cold.' },
+    // 17 — Hand-off
+    { phase: 'card', cta: 'Play', final: true,
+      text: 'OK, professor — real game now. Good luck.' },
   ];
 
   let tut = null;
@@ -3998,6 +4087,7 @@
   const tutCardText = document.getElementById('tut-card-text');
   const tutCardCta  = document.getElementById('tut-card-cta');
   const tutCardSkip = document.getElementById('tut-card-skip');
+  const tutDotEl    = document.getElementById('tut-dot');
 
   const TUT_SECTION_KEYS = ['header', 'board', 'score', 'hand'];
   function _tutSection(key) {
@@ -4008,18 +4098,19 @@
     return null;
   }
 
-  function tutApplyClasses(hlKey, dimKeys) {
+  function tutApplyClasses(step) {
+    const hlKey   = step.hl;
+    const dimKeys = step.dim || [];
     TUT_SECTION_KEYS.forEach(k => {
       const el = _tutSection(k);
       if (!el) return;
       el.classList.remove('tut-hl', 'tut-dim');
-      if (k === hlKey)            el.classList.add('tut-hl');
+      if (k === hlKey)              el.classList.add('tut-hl');
       else if (dimKeys.includes(k)) el.classList.add('tut-dim');
     });
-    // tile 0 highlight only during 'place' step
     tileEls.forEach((el, i) => {
       el.classList.remove('tut-hl');
-      if (hlKey === 'board' && i === TUT_TARGET_TILE) el.classList.add('tut-hl');
+      if (hlKey === 'board' && step.target === i) el.classList.add('tut-hl');
     });
   }
 
@@ -4031,10 +4122,31 @@
     tileEls.forEach(el => el.classList.remove('tut-hl'));
   }
 
+  function showTutDot(getEl) {
+    const el = typeof getEl === 'function' ? getEl() : document.getElementById(getEl);
+    if (!el || !tutDotEl) return;
+    const r  = el.getBoundingClientRect();
+    const ar = appEl.getBoundingClientRect();
+    tutDotEl.style.left = (r.right - ar.left - 4) + 'px';
+    tutDotEl.style.top  = (r.top - ar.top + r.height / 2) + 'px';
+    tutDotEl.classList.add('show');
+  }
+
+  function hideTutDot() {
+    if (tutDotEl) tutDotEl.classList.remove('show');
+  }
+
+  function tutReHighlight(tileIndices, duration) {
+    tileIndices.forEach(i => tileEls[i].classList.add('tut-rehl'));
+    setTimeout(() => {
+      tileIndices.forEach(i => tileEls[i].classList.remove('tut-rehl'));
+    }, duration || 1800);
+  }
+
   function tutShowHint(step) {
     tutHintText.textContent = step.text;
     tutHintEl.classList.add('show');
-    tutApplyClasses(step.hl, step.dim || []);
+    tutApplyClasses(step);
   }
 
   function tutHideHint() {
@@ -4057,17 +4169,18 @@
     if (!tut) return;
     tut.step++;
     const step = TUT_STEPS[tut.step];
-    if (!step || step.final) {
-      // final card or beyond — show it then stop
-      if (step) tutShowCard(step);
-      return;
-    }
+    if (!step) { endTutorial(); return; }
+
     if (step.phase === 'card') {
       tutHideHint();
       tutClearClasses();
+      hideTutDot();
       tutShowCard(step);
+      if (step.dotTarget) setTimeout(() => showTutDot(step.dotTarget), 150);
+      if (step.rehl)      setTimeout(() => tutReHighlight(step.rehl, 1800), 400);
     } else {
       tutHideCard();
+      hideTutDot();
       game.paused = false;
       tutShowHint(step);
     }
@@ -4078,6 +4191,7 @@
     tutClearClasses();
     tutHideHint();
     tutHideCard();
+    hideTutDot();
     game.paused = false;
   }
 
@@ -4086,8 +4200,49 @@
     showOverlay(homeScreen);
   }
 
+  function setupTutorialBoard() {
+    TUT_TILES.forEach((v, i) => {
+      tiles[i] = v;
+      tileEls[i].querySelector('.tile-value').textContent = v;
+    });
+
+    // Place 7 pre-set dice on the board (dice IDs 0-6)
+    TUT_PREPLACED.forEach(({ boardSlot, face }, idx) => {
+      hand[idx] = null;
+      board[boardSlot] = idx;
+      const d = dice[idx];
+      d.location   = { zone: 'board', slot: boardSlot };
+      d.face       = face;
+      d.rolledFace = face;
+      d.typeId     = 'gambler';
+      d.type       = DIE_TYPES['gambler'];
+      refreshDieTextures(d);
+      showFace(d, face);
+      applyDieTint(d, null);
+      layoutDie(d);
+      tileEls[boardSlot].classList.add('occupied');
+    });
+
+    // Compact the two player dice to hand slots 0 and 1
+    for (let h = 7; h <= 8; h++) hand[h] = null;
+    [7, 8].forEach((dieId, slot) => {
+      hand[slot] = dieId;
+      const d = dice[dieId];
+      d.location = { zone: 'hand', slot };
+      d.typeId   = 'gambler';
+      d.type     = DIE_TYPES['gambler'];
+      refreshDieTextures(d);
+      showFace(d, 1);
+      applyDieTint(d, null);
+      layoutDie(d);
+    });
+  }
+
   function openTutorial() {
     tut = { step: 0 };
+    resetGame();
+    showOverlay(null);    // reveal the board behind the welcome card
+    setupTutorialBoard();
     tutShowCard(TUT_STEPS[0]);
   }
 
@@ -4103,14 +4258,8 @@
     }
 
     if (tut.step === 0) {
-      // Welcome → start game then move to action steps
       tutHideCard();
-      resetGame();
-      showOverlay(null);
-      // override the target tile to match our forced roll
-      tiles[TUT_TARGET_TILE] = TUT_FORCE_FACE;
-      tileEls[TUT_TARGET_TILE].querySelector('.tile-value').textContent = TUT_FORCE_FACE;
-      advanceTutorial(); // → step 1 (select)
+      advanceTutorial(); // → step 1 (select-1)
       return;
     }
 
