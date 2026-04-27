@@ -2175,6 +2175,20 @@
     <button class="menu-btn" id="options-back">Back</button>
   </div>
 
+  <!-- Tutorial hint bar -->
+  <div class="tut-hint" id="tut-hint">
+    <span class="tut-hint-text" id="tut-hint-text"></span>
+    <button class="tut-skip-btn" id="tut-skip">Skip</button>
+  </div>
+
+  <!-- Tutorial info cards -->
+  <div class="tut-card" id="tut-card">
+    <span class="tut-card-label">Tutorial</span>
+    <p class="tut-card-text" id="tut-card-text"></p>
+    <button class="tut-card-cta" id="tut-card-cta"></button>
+    <button class="tut-card-skip" id="tut-card-skip">Skip tutorial</button>
+  </div>
+
   <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
   <!-- Research screen -->
   <div class="overlay research-screen" id="research-screen" style="background: #000;">
@@ -5100,6 +5114,21 @@
     animate();
 
     refreshHomeUsername();
+
+    // Highlight Tutorial button until the player has opened it once
+    const TUT_SEEN_KEY = 'dl_tutorial_seen';
+    const tutBtnEl = document.getElementById('home-tutorial');
+    if (!localStorage.getItem(TUT_SEEN_KEY)) tutBtnEl.classList.add('tut-hl');
+    const _origOpenTutorial = openTutorial;
+    // Wrap openTutorial to clear the highlight on first use
+    window._tutOpen = function() {
+      localStorage.setItem(TUT_SEEN_KEY, '1');
+      tutBtnEl.classList.remove('tut-hl');
+      _origOpenTutorial();
+    };
+    tutBtnEl.removeEventListener('click', openTutorial);
+    tutBtnEl.addEventListener('click', window._tutOpen);
+
     if (!username) {
       showOverlay(nameEntry);
       nameInput.focus();
@@ -5108,20 +5137,6 @@
     }
   });
   </script>
-
-  <!-- Tutorial hint bar -->
-  <div class="tut-hint" id="tut-hint">
-    <span class="tut-hint-text" id="tut-hint-text"></span>
-    <button class="tut-skip-btn" id="tut-skip">Skip</button>
-  </div>
-
-  <!-- Tutorial info cards -->
-  <div class="tut-card" id="tut-card">
-    <span class="tut-card-label">Tutorial</span>
-    <p class="tut-card-text" id="tut-card-text"></p>
-    <button class="tut-card-cta" id="tut-card-cta"></button>
-    <button class="tut-card-skip" id="tut-card-skip">Skip tutorial</button>
-  </div>
 
 </div>
 </body>
