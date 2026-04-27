@@ -1690,6 +1690,106 @@
       cursor: pointer;
       margin-top: 6px;
     }
+
+    /* ── Tutorial ──────────────────────────────────────── */
+    .tut-hint {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: rgba(0, 0, 0, 0.92);
+      border-top: 1px solid rgba(57, 231, 95, 0.35);
+      padding: 14px 16px 18px;
+      z-index: 50;
+      display: none;
+      align-items: center;
+      gap: 12px;
+    }
+    .tut-hint.show { display: flex; }
+    .tut-hint-text {
+      flex: 1;
+      font-size: 0.8rem;
+      letter-spacing: 0.04em;
+      color: #fff;
+      line-height: 1.45;
+    }
+    .tut-skip-btn {
+      flex: 0 0 auto;
+      background: transparent;
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      color: rgba(255, 255, 255, 0.4);
+      border-radius: 6px;
+      padding: 6px 10px;
+      font-size: 0.58rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      cursor: pointer;
+    }
+    .tut-card {
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.96);
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 60;
+      padding: 36px 28px;
+      gap: 28px;
+    }
+    .tut-card.show { display: flex; }
+    .tut-card-label {
+      font-size: 0.58rem;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: rgba(57, 231, 95, 0.7);
+    }
+    .tut-card-text {
+      font-size: 1.05rem;
+      letter-spacing: 0.04em;
+      color: #fff;
+      text-align: center;
+      line-height: 1.55;
+      max-width: 280px;
+    }
+    .tut-card-cta {
+      background: #39e75f;
+      color: #000;
+      border: none;
+      border-radius: 26px;
+      padding: 14px 36px;
+      font-size: 0.82rem;
+      font-weight: 900;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      cursor: pointer;
+      min-width: 140px;
+    }
+    .tut-card-skip {
+      background: transparent;
+      border: none;
+      color: rgba(255, 255, 255, 0.3);
+      font-size: 0.58rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      cursor: pointer;
+      text-decoration: underline;
+    }
+    @keyframes tut-pulse {
+      0%, 100% { box-shadow: 0 0 0 2px rgba(57,231,95,0.7), 0 0 12px rgba(57,231,95,0.25); }
+      50%       { box-shadow: 0 0 0 3px rgba(57,231,95,1),   0 0 24px rgba(57,231,95,0.5);  }
+    }
+    .tut-hl {
+      animation: tut-pulse 1.3s ease-in-out infinite;
+      border-radius: 8px;
+      position: relative;
+      z-index: 2;
+    }
+    .tut-dim {
+      opacity: 0.2;
+      pointer-events: none !important;
+      transition: opacity 0.25s;
+    }
   </style>
 </head>
 <body>
@@ -1741,6 +1841,7 @@
     <button class="menu-btn" id="home-shrine">Shrine</button>
     <button class="menu-btn" id="home-research">Research</button>
     <button class="menu-btn" id="home-leaderboard">Leaderboard</button>
+    <button class="menu-btn" id="home-tutorial">Tutorial</button>
     <button class="menu-btn" id="home-options">Options</button>
   </div>
 
@@ -2921,6 +3022,20 @@
     if (game.ended || game.paused || game.animating > 0) return;
     if (game.rolledDie != null) return;      // must place first
 
+    // Tutorial locks
+    if (tut) {
+      const lock = TUT_STEPS[tut.step] && TUT_STEPS[tut.step].lock;
+      if (lock === 'select') {
+        // allow selection only — block if they'd trigger a roll (already selected)
+        if (game.selectedDie === hand[slotIdx]) return;
+      } else if (lock === 'roll') {
+        // only allow re-tapping the already-selected die
+        if (game.selectedDie !== hand[slotIdx]) return;
+      } else {
+        return;
+      }
+    }
+
     const dieId = hand[slotIdx];
     if (dieId == null) return;
 
@@ -2932,11 +3047,20 @@
       game.selectedDie = dieId;
       setSlotClass(slotIdx, 'selected');
       updateStrip({ face: 0, tile: 0, power: 0, combo: 0, luck: 0 });
+      if (tut && TUT_STEPS[tut.step].lock === 'select') advanceTutorial(); // → step 2 roll
     }
   }
 
   function onBoardTap(tileIdx) {
     if (game.ended || game.paused || game.animating > 0) return;
+
+    // Tutorial: only the target tile is allowed during 'place' step
+    if (tut) {
+      const lock = TUT_STEPS[tut.step] && TUT_STEPS[tut.step].lock;
+      if (lock !== 'place') return;
+      if (tileIdx !== TUT_TARGET_TILE) return;
+    }
+
     if (board[tileIdx] != null) {
       inspectTile(tileIdx);
       return;
@@ -3100,6 +3224,7 @@
     }
     let finalFace = Math.floor(ctx.face);
     if (!Number.isFinite(finalFace) || finalFace < 1 || finalFace > 6) finalFace = originalFace;
+    if (tut) finalFace = TUT_FORCE_FACE; // override all hooks during tutorial
 
     const target  = FACE_TOWARD_CAMERA[finalFace];
     const extra   = FACE_ROLL_EXTRA[finalFace];
@@ -3125,6 +3250,7 @@
     die.hasRolled = true; // first roll permanently retires the idle trait icon
     showFace(die, finalFace);   // swap face-1 material from trait icon → pip now that hasRolled is true
     game.session.lastRolledFace = finalFace;
+    if (tut && TUT_STEPS[tut.step] && TUT_STEPS[tut.step].lock === 'roll') advanceTutorial(); // → step 3 place
 
     // Deferred side-effects run AFTER the rotation tween so the roller
     // visually settles before its power plays out. Currently only Reaper:
@@ -3307,6 +3433,12 @@
     }
 
     updateStrip({});
+
+    // Tutorial: after the first placement + return animation, show info cards
+    if (tut && TUT_STEPS[tut.step] && TUT_STEPS[tut.step].lock === 'place') {
+      advanceTutorial(); // → step 4 score card
+      return;            // don't call endSession during tutorial
+    }
 
     // Clear per-die per-turn flags so trigger dedup resets next turn.
     // lastRolledFace intentionally persists across turns within a session.
@@ -3774,6 +3906,165 @@
     renderResearch();
     showOverlay(document.getElementById('research-screen'));
   }
+
+  // ─── Tutorial ────────────────────────────────────────────────────────────
+  const TUT_FORCE_FACE  = 4;   // forced roll value — 4 is in Gambler's even pool
+  const TUT_TARGET_TILE = 0;   // board tile index the player is guided to place on
+
+  const TUT_STEPS = [
+    // step 0 — welcome card (shown before game starts)
+    { phase: 'card',   text: 'Place dice on the board, score points, survive to 100 returns.',
+                       cta: 'Start', allowSkip: true },
+    // step 1 — select a die
+    { phase: 'action', lock: 'select', text: 'Tap a die in your hand to select it.',
+                       hl: 'hand', dim: ['header','board','score'] },
+    // step 2 — roll it
+    { phase: 'action', lock: 'roll',   text: 'Roll your die.',
+                       hl: 'hand', dim: ['header','board','score'] },
+    // step 3 — place it
+    { phase: 'action', lock: 'place',  text: 'Place it on the glowing tile.',
+                       hl: 'board', dim: ['header','score','hand'] },
+    // step 4 — score info card
+    { phase: 'card',   text: 'Face + Tile + Power + Combo = your score for the turn.',
+                       cta: 'Next' },
+    // step 5 — returns info card
+    { phase: 'card',   text: 'A matching die — or a row of three — returns to your hand. That\'s how you stay alive.',
+                       cta: 'Next' },
+    // step 6 — goal info card
+    { phase: 'card',   text: 'Reach 100 returns to win. Empty your hand and it\'s over.',
+                       cta: 'Play', final: true },
+  ];
+
+  let tut = null;
+
+  const tutHintEl   = document.getElementById('tut-hint');
+  const tutHintText = document.getElementById('tut-hint-text');
+  const tutCardEl   = document.getElementById('tut-card');
+  const tutCardText = document.getElementById('tut-card-text');
+  const tutCardCta  = document.getElementById('tut-card-cta');
+  const tutCardSkip = document.getElementById('tut-card-skip');
+
+  const TUT_SECTION_KEYS = ['header', 'board', 'score', 'hand'];
+  function _tutSection(key) {
+    if (key === 'header') return document.querySelector('.header');
+    if (key === 'board')  return document.getElementById('board-section');
+    if (key === 'score')  return document.querySelector('.score');
+    if (key === 'hand')   return document.getElementById('hand-section');
+    return null;
+  }
+
+  function tutApplyClasses(hlKey, dimKeys) {
+    TUT_SECTION_KEYS.forEach(k => {
+      const el = _tutSection(k);
+      if (!el) return;
+      el.classList.remove('tut-hl', 'tut-dim');
+      if (k === hlKey)            el.classList.add('tut-hl');
+      else if (dimKeys.includes(k)) el.classList.add('tut-dim');
+    });
+    // tile 0 highlight only during 'place' step
+    tileEls.forEach((el, i) => {
+      el.classList.remove('tut-hl');
+      if (hlKey === 'board' && i === TUT_TARGET_TILE) el.classList.add('tut-hl');
+    });
+  }
+
+  function tutClearClasses() {
+    TUT_SECTION_KEYS.forEach(k => {
+      const el = _tutSection(k);
+      if (el) el.classList.remove('tut-hl', 'tut-dim');
+    });
+    tileEls.forEach(el => el.classList.remove('tut-hl'));
+  }
+
+  function tutShowHint(step) {
+    tutHintText.textContent = step.text;
+    tutHintEl.classList.add('show');
+    tutApplyClasses(step.hl, step.dim || []);
+  }
+
+  function tutHideHint() {
+    tutHintEl.classList.remove('show');
+  }
+
+  function tutShowCard(step) {
+    tutCardText.textContent = step.text;
+    tutCardCta.textContent  = step.cta || 'Next';
+    tutCardSkip.style.display = step.final ? 'none' : '';
+    tutCardEl.classList.add('show');
+    game.paused = true;
+  }
+
+  function tutHideCard() {
+    tutCardEl.classList.remove('show');
+  }
+
+  function advanceTutorial() {
+    if (!tut) return;
+    tut.step++;
+    const step = TUT_STEPS[tut.step];
+    if (!step || step.final) {
+      // final card or beyond — show it then stop
+      if (step) tutShowCard(step);
+      return;
+    }
+    if (step.phase === 'card') {
+      tutHideHint();
+      tutClearClasses();
+      tutShowCard(step);
+    } else {
+      tutHideCard();
+      game.paused = false;
+      tutShowHint(step);
+    }
+  }
+
+  function endTutorial() {
+    tut = null;
+    tutClearClasses();
+    tutHideHint();
+    tutHideCard();
+    game.paused = false;
+  }
+
+  function skipTutorial() {
+    endTutorial();
+    showOverlay(homeScreen);
+  }
+
+  function openTutorial() {
+    tut = { step: 0 };
+    tutShowCard(TUT_STEPS[0]);
+  }
+
+  // CTA button on tutorial cards
+  tutCardCta.addEventListener('click', () => {
+    if (!tut) return;
+    const step = TUT_STEPS[tut.step];
+    if (!step) return;
+
+    if (step.final) {
+      endTutorial();
+      return;
+    }
+
+    if (tut.step === 0) {
+      // Welcome → start game then move to action steps
+      tutHideCard();
+      resetGame();
+      showOverlay(null);
+      // override the target tile to match our forced roll
+      tiles[TUT_TARGET_TILE] = TUT_FORCE_FACE;
+      tileEls[TUT_TARGET_TILE].querySelector('.tile-value').textContent = TUT_FORCE_FACE;
+      advanceTutorial(); // → step 1 (select)
+      return;
+    }
+
+    advanceTutorial();
+  });
+
+  tutCardSkip.addEventListener('click', skipTutorial);
+  document.getElementById('tut-skip').addEventListener('click', skipTutorial);
+  document.getElementById('home-tutorial').addEventListener('click', openTutorial);
 
   // ─── Leaderboard ─────────────────────────────────────────────────────────
   const LB_NAMES = [
@@ -4817,6 +5108,21 @@
     }
   });
   </script>
+
+  <!-- Tutorial hint bar -->
+  <div class="tut-hint" id="tut-hint">
+    <span class="tut-hint-text" id="tut-hint-text"></span>
+    <button class="tut-skip-btn" id="tut-skip">Skip</button>
+  </div>
+
+  <!-- Tutorial info cards -->
+  <div class="tut-card" id="tut-card">
+    <span class="tut-card-label">Tutorial</span>
+    <p class="tut-card-text" id="tut-card-text"></p>
+    <button class="tut-card-cta" id="tut-card-cta"></button>
+    <button class="tut-card-skip" id="tut-card-skip">Skip tutorial</button>
+  </div>
+
 </div>
 </body>
 </html>
