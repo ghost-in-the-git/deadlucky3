@@ -2,26 +2,61 @@
 
 ## Voice & Tone
 Narrator is a quirky "professor" character. Warm, slightly dramatic, short sentences.
-The player is addressed directly. No walls of text — one idea per beat.
+The player ("professor") is addressed directly. One idea per beat, no walls of text.
 
 ---
 
 ## Pre-set Game State
-Before the tutorial starts the engine must set up a controlled board so every
-step is guaranteed to play out correctly.
 
-| Item | Value | Reason |
-|------|-------|--------|
-| Tile 0 (top-left) | **3** | matches forced roll |
-| Tiles 1–8 | random or fixed — TBD | need a straight & triple in later steps |
-| First roll | forced **3** | guaranteed match on tile 0 |
-| Die type | Gambler (default) | no special powers to confuse things |
-| Hand | full 9 dice | normal start |
+Board is 7/9 filled before the tutorial starts. Player places exactly 2 dice.
 
-> **Open question:** steps later in the flow ask the player to trigger a straight
-> and a triple. We need to decide whether to (a) pre-set specific tiles so the
-> player can engineer them naturally, or (b) script a second forced placement
-> sequence. Needs resolving before code.
+### Board layout
+
+```
+[ ]  4   3        slot 0 = empty  →  player placement 1
+ 5   5   3        slot 3 = empty  →  player placement 2 (below slot 0, left column)
+ 1   2   3
+```
+
+| Slot | State | Die face | Tile value | Notes |
+|------|-------|----------|------------|-------|
+| 0 | **empty** | forced **3** | **3** | match guaranteed |
+| 1 | pre-placed | 4 | 2 | filler, no combo |
+| 2 | pre-placed | 3 | 6 | part of right-col triple |
+| 3 | **empty** | forced **5** | **5** | match guaranteed |
+| 4 | pre-placed | 5 | 1 | filler, no combo |
+| 5 | pre-placed | 3 | 4 | part of right-col triple |
+| 6 | pre-placed | 1 | 6 | part of bottom-row straight |
+| 7 | pre-placed | 2 | 5 | part of bottom-row straight |
+| 8 | pre-placed | 3 | 1 | part of right-col triple + bottom-row straight |
+
+### Combos that fire at end of turn (after both placements)
+
+| Combo | Tiles | How |
+|-------|-------|-----|
+| Match | 0 | face 3 = tile 3 |
+| Match | 3 | face 5 = tile 5 |
+| Triple | 2, 5, 8 | faces 3, 3, 3 |
+| Straight | 6, 7, 8 | faces 1, 2, 3 |
+
+**Total returning: 7 dice** (slots 0, 2, 3, 5, 6, 7, 8)
+
+Verified — no accidental combos from the forced placements:
+- Row 1 post-placement: 5, 5, 3 — not a triple, not a straight ✓
+- Col 0 post-placement: 3, 5, 1 — not a straight ✓
+- No cross fires ✓
+
+### Hand
+- 2 Gambler dice (default die type, no special powers)
+- No other dice in hand
+
+---
+
+## UI Pointer
+A small white dot (pulsing) appears near UI elements when they are referenced
+in copy. No arrow — just a dot close to the element. Fades out on the next beat.
+Appears near: score strip (on "points on tile" beat), returns counter (on "count
+up here" beat).
 
 ---
 
@@ -31,16 +66,17 @@ step is guaranteed to play out correctly.
 > *"Welcome back, professor! Looks like you lost your memory in that last test —
 > let's get you rolling again."*
 
-Action: tap **Start** or **Skip Tutorial**
+- Board is visible behind the card with 7 dice already placed
+- Buttons: **Let's go** / **Skip tutorial**
 
 ---
 
 ### ACTION — Select a die
-> *"Step one: tap a die in your hand to select it."*
+> *"Step one — tap a die in your hand to select it."*
 
-- Hand section glows, all other sections dimmed
+- Hand section glows, everything else dimmed
 - Input locked to hand only
-- Advances automatically when a die is selected
+- Auto-advances when any die is selected
 
 ---
 
@@ -48,142 +84,132 @@ Action: tap **Start** or **Skip Tutorial**
 > *"Good. Now tap it again to roll it."*
 
 - Only the selected die slot is tappable
-- Roll result is forced to **3**
-- Advances automatically after roll animation settles
+- Roll is forced to **3**
+- Auto-advances after roll animation settles
 
 ---
 
-### ACTION — Place
-> *"It's a 3. Put it on the board — let's go top left."*
+### ACTION — Place (slot 0)
+> *"It's a 3. Top left — go on."*
 
-- Board section visible, tile 0 (top-left) glows
-- Only tile 0 is tappable
-- Advances automatically after die is placed
-
----
-
-### CARD — Points on the tile
-> *"Boom — die placed. You can see it has some points sitting on it."*
-
-Action: tap **Next**
+- Board highlighted, slot 0 (top-left) pulses
+- Only slot 0 is tappable
+- Auto-advances after die is placed and match state is shown (die flips to 9)
 
 ---
 
-### CARD — Scoring explained
-> *"Points are a mix of the roll value, the board value, the combo multiplier,
-> and each die's own powers. It's deep — but to get started you just need to
-> roll and combo."*
+### CARD — Match explained
+> *"See how it turned into a 9? That means it matched the tile — that's a Match combo.
+> Matched dice always come back."*
 
-Action: tap **Next**
-
----
-
-### CARD — Dice don't pay out yet
-> *"Dice don't give you their points until they come back to your hand."*
-
-Action: tap **Next**
+- White dot pulses near the 9 on slot 0
+- Button: **Next**
 
 ---
 
-### CARD — How to get dice back
-> *"So how do you get dice back? Glad you asked."*
+### CARD — Points sitting on tiles
+> *"But it hasn't scored yet. Dice hold their points on the board until they
+> return to your hand."*
 
-Action: tap **Next**
+- White dot pulses near the score strip
+- Button: **Next**
 
 ---
 
-### CARD — There are 4 combo types
-> *"You have to combo them. There are 4 types of combos."*
+### ACTION — Place (slot 3)
+> *"One more. There's only one spot left — go ahead."*
 
-Action: tap **Next**
+- Board highlighted, slot 3 (middle-left) pulses
+- Only slot 3 is tappable
+- Roll is forced to **5** (match with tile 3 = 5)
+- Auto-advances after placement — hand is now empty, return sweep begins
+
+---
+
+### CARD — (shown after return animation completes)
+> *"There we go. Seven dice came home — and your score jumped."*
+
+- White dot pulses near the score total in header
+- Button: **Next**
+
+---
+
+### CARD — How returns work
+> *"Dice come back when they combo. There are four types."*
+
+- Button: **Next**
 
 ---
 
 ### CARD — Combo 1: Match
-> *"First: a Match. If the number you rolled matches the number on the tile,
-> that die scores and returns. You can tell when it's matched — it flips to a 9."*
+> *"A Match — your roll equals the tile number. The die turns 9 and comes home."*
 
-Action: tap **Next**
-
----
-
-### CARD — Combo 2: Straight
-> *"Second: a Straight. Place three dice in a row with consecutive numbers —
-> like 1, 2, 3. All three return."*
-
-Action: tap **Next**
+- Button: **Next**
 
 ---
 
-### CARD — Combo 3: Triple
-> *"Third: a Triple. Fill a row with three matching numbers — like 5, 5, 5.
-> All three return."*
+### CARD — Combo 2: Triple
+> *"A Triple — three dice in a line with the same number, like those 3s on the
+> right. All three return."*
 
-Action: tap **Next**
-
----
-
-### CARD — Combo 4: [TBD]
-> *"[Fourth combo type — needs copy once confirmed]"*
-
-Action: tap **Next**
-
-> **Open question:** what is the 4th combo type? Diagonal? Luck-based?
-> Needs confirming from design before this card is written.
+- Optionally: right column (slots 2, 5, 8) briefly re-highlights
+- Button: **Next**
 
 ---
 
-### ACTION — Place the last die (trigger returns)
-> *"Go ahead — place one more die. That'll trigger the return."*
+### CARD — Combo 3: Straight
+> *"A Straight — three dice in a line with consecutive numbers. 1, 2, 3 along
+> the bottom — done."*
 
-- Specific tile TBD (must be set up to guarantee a combo fires)
-- Input unlocked for board only
-- Advances after the return animation completes
+- Optionally: bottom row (slots 6, 7, 8) briefly re-highlights
+- Button: **Next**
 
 ---
 
-### CARD — Points collected
-> *"There — your score went up. That's your dice paying out as they came home."*
+### CARD — Combo 4: Cross
+> *"A Cross — two lines through the middle tile, both forming a combo at the
+> same time. Rare. Pays well."*
 
-Action: tap **Next**
+- Button: **Next**
 
 ---
 
 ### CARD — The goal
-> *"That's the game. Roll, place, combo, collect. Get as many points as you can
-> across 100 returns."*
+> *"That's the game. Roll, place, combo, collect. You get 100 returns total —
+> make every one count."*
 
-Action: tap **Next**
-
----
-
-### CARD — Returns counter
-> *"You can see your return count up here."*
-
-- Optionally highlight the returns counter in the header
-Action: tap **Next**
+- White dot pulses near the returns counter in the header
+- Button: **Next**
 
 ---
 
 ### CARD — Game over condition
-> *"One warning: if you ever place a die and nothing returns to your hand —
-> that's an instant game over. Don't let the board go cold."*
+> *"One thing — if you ever place a die and nothing comes back, it's over.
+> Don't let the board go cold."*
 
-Action: tap **Next**
+- Button: **Next**
 
 ---
 
 ### CARD — Hand-off
-> *"OK — I'll throw you into a real game now. Good luck, professor."*
+> *"OK, professor — real game now. Good luck."*
 
-Action: tap **Play** → tutorial ends, real game begins
+- Button: **Play** → tutorial ends, real game begins from clean state
 
 ---
 
-## Open Questions Before Implementation
+## Resolved Questions
 
-1. **4th combo type** — what is it?
-2. **Pre-set tile layout** — which tile values guarantee the player can trigger a straight and a triple during the tutorial without it feeling forced?
-3. **Second forced placement** — do we script the second action step (the "trigger a return" step) with a forced roll, or let it play free and wait for any return?
-4. **Returns counter highlight** — do we add a pointer/arrow to the header, or just describe it in copy?
-5. **Character name** — is "professor" the locked name, or placeholder?
+| # | Question | Answer |
+|---|----------|--------|
+| 1 | 4th combo type | **Cross** — two qualifying lines through centre simultaneously |
+| 2 | Pre-set tile layout | Confirmed above — 7 pre-placed, 2 forced placements |
+| 3 | Second forced placement | **Yes** — forced roll 5, tile 5 = 5, guaranteed match |
+| 4 | Returns counter highlight | White pulsing dot near the element, no arrow |
+| 5 | "Professor" | NPC/narrator voice — how the character addresses the player |
+
+## Remaining Before Implementation
+
+- Decide whether the re-highlight of triple/straight lines after the combo
+  explanation cards is worth the effort (nice to have, not critical)
+- Confirm the "Play" hand-off starts a fresh game (not continuing tutorial state)
