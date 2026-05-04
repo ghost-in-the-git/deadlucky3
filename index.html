@@ -2737,91 +2737,103 @@
   // This replaces the prior shader-injection skin overlay. Pre-baked PNGs
   // mean: no canvas tainting on file://, no onBeforeCompile, no uniform
   // plumbing — just a plain `m.map = tex` swap, the same pattern Three.js
-  // itself recommends for changing a material's texture.
-  const SKIN_TEX = {};   // skinId -> { 'FACE_1': THREE.Texture, … }
-  const SKIN_IMG = {};   // skinId -> { 'FACE_1': HTMLImageElement, … }
-  const _imgRedrawCbs = new WeakMap(); // img -> Set<callback> (for 2D previews)
+  // Skin textures: each face is composited from two layers —
+  //   DICE_SKINS/SKINS/{SKIN}.png   — die background/frame (one per skin)
+  //   DICE_SKINS/ICONS/{KEY}.png    — shared black-on-white icon (one per face/type)
+  // Compositing uses multiply blend: white icon areas become the skin colour,
+  // black icon areas stay black. Adding a new skin needs only one base image.
+  const SKIN_TEX      = {};   // skinId -> { KEY: THREE.Texture }
+  const SKIN_BASE_IMG = {};   // skinId -> HTMLImageElement
+  const SKIN_ICON_IMG = {};   // key    -> HTMLImageElement
+  const _imgRedrawCbs = new WeakMap(); // img -> Set<callback>
 
   function _skinKey(k) { return String(k).toUpperCase(); }
-  function skinFaceUrl(skinId, key) {
-    return `DICE_SKINS/${skinId.toUpperCase()}/${_skinKey(key)}.png`;
+  function skinBaseUrl(skinId) {
+    return `DICE_SKINS/SKINS/${skinId.toUpperCase()}.png`;
+  }
+  function skinIconUrl(key) {
+    return `DICE_SKINS/ICONS/${_skinKey(key)}.png`;
   }
 
-  // Returns a THREE.Texture for (skinId, key). Triggers a load on first
-  // request. The loader sets needsUpdate when bytes arrive so the running
-  // material picks up the pixels without us having to listen.
-  //
-  // Why we DON'T use THREE.TextureLoader: on file:// it sets
-  // crossOrigin='anonymous' which causes the loaded image to be flagged
-  // tainted for WebGL upload → black textures. A bare `new Image()` with
-  // no crossOrigin attribute is treated as same-origin to a file:// page
-  // and uploads to WebGL cleanly. Same root cause as the old canvas-
-  // tainting bug, just via a different code path.
-  //
-  // Missing-file fallback: if the PNG 404s (most often a trait file that
-  // hasn't been baked yet), we re-point the same Texture object at
-  // FACE_1.png so any material already bound to it picks up the fallback.
-  function _configureTex(t) {
-    if (THREE.SRGBColorSpace) t.colorSpace = THREE.SRGBColorSpace;
-    t.anisotropy = 4;
-    t.needsUpdate = true;
+  function _onImgReady(img, cb) {
+    let cbs = _imgRedrawCbs.get(img);
+    if (!cbs) { cbs = new Set(); _imgRedrawCbs.set(img, cbs); }
+    cbs.add(cb);
   }
-  function _loadImageInto(tex, url, onFail) {
+  function _fireOnLoad(img) {
+    img.addEventListener('load', () => {
+      const cbs = _imgRedrawCbs.get(img);
+      if (cbs) { cbs.forEach(fn => { try { fn(); } catch (e) {} }); cbs.clear(); }
+    });
+  }
+
+  function getSkinBaseImg(skinId) {
+    const id = skinId || DEFAULT_SKIN;
+    if (SKIN_BASE_IMG[id]) return SKIN_BASE_IMG[id];
     const img = new Image();
-    img.onload  = () => { tex.image = img; _configureTex(tex); };
-    img.onerror = () => { if (onFail) onFail(); };
-    img.src = url;
+    _fireOnLoad(img);
+    img.addEventListener('error', () => console.warn('Skin base missing:', img.src));
+    img.src = skinBaseUrl(id);
+    SKIN_BASE_IMG[id] = img;
+    return img;
   }
+
+  function getSkinIconImg(key) {
+    const k = _skinKey(key);
+    if (SKIN_ICON_IMG[k]) return SKIN_ICON_IMG[k];
+    const img = new Image();
+    _fireOnLoad(img);
+    img.addEventListener('error', () => {
+      if (k !== 'FACE_1') {
+        console.warn('Icon missing, falling back to FACE_1:', img.src);
+        img.src = skinIconUrl('FACE_1');
+      }
+    });
+    img.src = skinIconUrl(k);
+    SKIN_ICON_IMG[k] = img;
+    return img;
+  }
+
+  // Returns a THREE.Texture for (skinId, key). The texture image is an
+  // offscreen canvas that re-composites whenever either layer finishes loading.
   function getSkinTex(skinId, key) {
     const id = skinId || DEFAULT_SKIN;
     const k  = _skinKey(key);
     if (!SKIN_TEX[id]) SKIN_TEX[id] = {};
     const slot = SKIN_TEX[id];
     if (slot[k]) return slot[k];
+
     const tex = new THREE.Texture();
     if (THREE.SRGBColorSpace) tex.colorSpace = THREE.SRGBColorSpace;
     tex.anisotropy = 4;
     slot[k] = tex;
-    const url = skinFaceUrl(id, k);
-    _loadImageInto(tex, url, () => {
-      if (k === 'FACE_1') {
-        console.warn('Skin texture failed (no fallback):', url);
-        return;
+
+    const offscreen = document.createElement('canvas');
+    offscreen.width = offscreen.height = 256;
+    const base = getSkinBaseImg(id);
+    const icon = getSkinIconImg(k);
+
+    function composite() {
+      const ctx = offscreen.getContext('2d');
+      ctx.clearRect(0, 0, 256, 256);
+      if (base.complete && base.naturalWidth > 0)
+        ctx.drawImage(base, 0, 0, 256, 256);
+      if (icon.complete && icon.naturalWidth > 0) {
+        ctx.globalCompositeOperation = 'multiply';
+        ctx.drawImage(icon, 0, 0, 256, 256);
+        ctx.globalCompositeOperation = 'source-over';
       }
-      console.warn('Skin texture missing, using FACE_1:', url);
-      _loadImageInto(tex, skinFaceUrl(id, 'FACE_1'));
-    });
+      tex.image = offscreen;
+      tex.needsUpdate = true;
+    }
+
+    composite();
+    _onImgReady(base, composite);
+    _onImgReady(icon, composite);
     return tex;
   }
 
-  // Returns the same PNG as an HTMLImageElement for 2D canvas previews.
-  // The 2D draw path schedules a re-render once the image finishes loading
-  // so builder tiles don't stay blank on first paint.
-  function getSkinImg(skinId, key) {
-    const id = skinId || DEFAULT_SKIN;
-    const k  = _skinKey(key);
-    if (!SKIN_IMG[id]) SKIN_IMG[id] = {};
-    const slot = SKIN_IMG[id];
-    if (slot[k]) return slot[k];
-    const img = new Image();
-    img.addEventListener('load', () => {
-      const cbs = _imgRedrawCbs.get(img);
-      if (cbs) { cbs.forEach(fn => { try { fn(); } catch (e) {} }); cbs.clear(); }
-    });
-    img.addEventListener('error', () => console.warn('Skin image failed:', img.src));
-    img.src = skinFaceUrl(id, k);
-    slot[k] = img;
-    return img;
-  }
-  function _onImgReady(img, cb) {
-    let cbs = _imgRedrawCbs.get(img);
-    if (!cbs) { cbs = new Set(); _imgRedrawCbs.set(img, cbs); }
-    cbs.add(cb);
-  }
-
-  // Resolve which file a given (face, matched, idle, typeId) combo wants.
-  // Idle face 1 maps to the trait file (named after the die's typeId);
-  // every other face maps to FACE_<n>; matched maps to FACE_9.
+  // Resolve which icon file a given (face, matched, idle, typeId) combo wants.
   function faceKeyFor(face, { matched = false, idle = false, typeId = null } = {}) {
     if (matched) return 'FACE_9';
     if (face === 1 && idle && typeId) return _skinKey(typeId);
@@ -2829,24 +2841,26 @@
   }
 
   // ─── 2D face drawing (deck builder, summary, reveal) ──────────────────
-  // The PNG is the source of truth for the face look — we blit it as-is,
-  // no tinting / no compositing / no overlays. Whatever colors a die has
-  // are baked into the trait PNG. The `tint` parameter is kept in the
-  // signature so existing callers don't need refactoring, but it's ignored.
   function drawDiceFace(canvas, pips, matched = false, _tint = 0xffffff, skinId = null, opts = {}) {
     canvas.width = 256; canvas.height = 256;
     const ctx  = canvas.getContext('2d');
     const skin = skinId || DEFAULT_SKIN;
     const key  = faceKeyFor(pips, { matched, idle: opts.idle, typeId: opts.typeId });
-    const img  = getSkinImg(skin, key);
+    const base = getSkinBaseImg(skin);
+    const icon = getSkinIconImg(key);
     const render = () => {
       ctx.clearRect(0, 0, 256, 256);
-      if (img.complete && img.naturalWidth > 0) {
-        ctx.drawImage(img, 0, 0, 256, 256);
+      if (base.complete && base.naturalWidth > 0)
+        ctx.drawImage(base, 0, 0, 256, 256);
+      if (icon.complete && icon.naturalWidth > 0) {
+        ctx.globalCompositeOperation = 'multiply';
+        ctx.drawImage(icon, 0, 0, 256, 256);
+        ctx.globalCompositeOperation = 'source-over';
       }
     };
     render();
-    if (!img.complete || img.naturalWidth === 0) _onImgReady(img, render);
+    if (!base.complete || !base.naturalWidth) _onImgReady(base, render);
+    if (!icon.complete || !icon.naturalWidth) _onImgReady(icon, render);
   }
 
   function makePipCanvas(pips, matched = false, tint = 0xffffff, skinId = null, opts = {}) {
