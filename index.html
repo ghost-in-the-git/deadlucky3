@@ -2904,6 +2904,7 @@
       const idle = v === 1 && !!typeId;
       return new THREE.MeshBasicMaterial({
         map: getSkinTex(skinId, faceKeyFor(v, { idle, typeId })),
+        depthTest: false,
       });
     });
     return new THREE.Mesh(GEO, mats);
@@ -2994,16 +2995,14 @@
     };
   }
 
-  function dieZ(location) {
-    if (location.zone !== 'hand') return 0;
-    return Math.floor(location.slot / 3) * 20;  // row 0=top→0, 1=mid→20, 2=bottom→40
+  function dieRow(location) {
+    return location.zone === 'hand' ? Math.floor(location.slot / 3) : 0;
   }
 
   function layoutDie(die) {
     const p = locationPosition(die.location);
-    const z = dieZ(die.location);
-    die.mesh.position.set(p.x, p.y, z);
-    die.mesh.renderOrder = z;
+    die.mesh.position.set(p.x, p.y, 0);
+    die.mesh.renderOrder = dieRow(die.location);
     die.mesh.scale.setScalar(p.size);
   }
 
@@ -3830,11 +3829,11 @@
       const final = locationPosition(die.location);
       const LIFT  = final.size * 1.5;  // start this far above the slot
 
-      const finalZ = dieZ(die.location);
+      const row = dieRow(die.location);
       die._tweening = true;
       die.mesh.visible = false;
-      die.mesh.renderOrder = finalZ;
-      die.mesh.position.set(final.x, final.y + LIFT, finalZ);
+      die.mesh.renderOrder = row;
+      die.mesh.position.set(final.x, final.y + LIFT, 0);
       die.mesh.scale.setScalar(final.size * 1.3);
       die.mesh.rotation.set(Math.PI / 2 - Math.PI / 6, 0, 0);
 
@@ -3851,7 +3850,7 @@
             die.mesh.rotation.x = Math.PI / 2 - (Math.PI / 6) * (1 - t);
           },
         });
-        die.mesh.position.set(final.x, final.y, finalZ);
+        die.mesh.position.set(final.x, final.y, 0);
         die.mesh.scale.setScalar(final.size);
 
         await tween({
