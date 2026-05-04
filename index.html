@@ -3311,6 +3311,17 @@
     const destX   = target.x + extra.x * _2PI;
     const destY   = target.y + extra.y * _2PI;
 
+    // Retire the idle trait icon early — swap materials at 100ms while the die
+    // is mid-spin so the texture change is hidden by the rolling motion.
+    die.hasRolled = true;
+    const _faceSwapTimer = setTimeout(() => {
+      const skinId = die.skinId || DEFAULT_SKIN;
+      die.mesh.material.forEach((m, i) => {
+        const slotFace = SLOT_FACE[i];
+        m.map = getSkinTex(skinId, faceKeyFor(slotFace, { idle: false, typeId: die.typeId }));
+      });
+    }, 100);
+
     die._tweening = true;
     await tween({
       duration: 700,
@@ -3321,13 +3332,13 @@
         die.mesh.rotation.z = r0.z + (target.z - r0.z) * t;
       },
     });
+    clearTimeout(_faceSwapTimer);
     die.mesh.rotation.set(target.x, target.y, target.z);
     die._tweening = false;
 
     die.face = finalFace;
     die.rolledFace = finalFace;
-    die.hasRolled = true; // first roll permanently retires the idle trait icon
-    showFace(die, finalFace);   // swap face-1 material from trait icon → pip now that hasRolled is true
+    showFace(die, finalFace);
     game.session.lastRolledFace = finalFace;
     if (tut) {
       const _tutLock = TUT_STEPS[tut.step] && TUT_STEPS[tut.step].lock;
