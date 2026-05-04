@@ -1128,8 +1128,28 @@
       gap: 14px;
       overflow-y: auto;
     }
+    .builder-header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      width: min(300px, 100%);
+    }
+    .builder-back {
+      background: transparent;
+      border: 1px solid var(--line-strong);
+      border-radius: 8px;
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: var(--ink);
+      font-size: 1.1rem;
+      flex-shrink: 0;
+    }
     .builder-title {
-      color: #27ae60;
+      color: var(--ink);
       font-size: 1.35rem;
       letter-spacing: 0.22em;
       text-transform: uppercase;
@@ -1235,8 +1255,8 @@
 
     .builder-actions {
       display: grid;
-      grid-template-columns: auto 1fr auto;
-      gap: 10px;
+      grid-template-columns: auto 1fr auto auto;
+      gap: 8px;
       width: min(300px, 100%);
       align-items: center;
     }
@@ -1252,9 +1272,10 @@
       color: var(--ink);
       cursor: pointer;
     }
-    .builder-cancel { color: #c0392b; border-color: #c0392b; min-width: 48px; }
-    .builder-confirm { color: #27ae60; border-color: #27ae60; min-width: 48px; }
+    .builder-deck-prev,
+    .builder-deck-next { min-width: 40px; text-align: center; padding: 10px 10px; }
     .builder-deck { text-align: center; }
+    .builder-confirm { color: #27ae60; border-color: #27ae60; min-width: 48px; }
 
     /* ─── Collection browser ─────────────────────────────────────────── */
     .collection-browser {
@@ -1912,7 +1933,10 @@
 
   <!-- Deck Builder -->
   <div class="overlay deck-builder" id="deck-builder" style="background: #000;">
-    <h1 class="builder-title">Deck Builder</h1>
+    <div class="builder-header">
+      <button class="builder-back" id="builder-cancel" aria-label="Back">&#8592;</button>
+      <h1 class="builder-title">Deck Builder</h1>
+    </div>
     <div class="builder-slots" id="builder-slots"></div>
     <div class="builder-layers">
       <button class="builder-layer" data-layer="skin" id="layer-skin">
@@ -1932,9 +1956,10 @@
       <div class="builder-die-flavor" id="builder-die-flavor"></div>
     </div>
     <div class="builder-actions">
-      <button class="builder-btn builder-cancel" id="builder-cancel" aria-label="Cancel">✕</button>
+      <button class="builder-btn builder-deck-prev" id="builder-deck-prev">&#8249;</button>
       <button class="builder-btn builder-deck" id="builder-deck">Deck 1</button>
-      <button class="builder-btn builder-confirm" id="builder-confirm" aria-label="Save">✓</button>
+      <button class="builder-btn builder-deck-next" id="builder-deck-next">&#8250;</button>
+      <button class="builder-btn builder-confirm" id="builder-confirm" aria-label="Save">Save</button>
     </div>
   </div>
 
@@ -5281,7 +5306,12 @@
   document.getElementById('sheet-confirm').addEventListener('click', confirmSacrifice);
   document.getElementById('builder-cancel').addEventListener('click', cancelBuilder);
   document.getElementById('builder-confirm').addEventListener('click', saveBuilder);
-  document.getElementById('builder-deck').addEventListener('click', () => {
+  document.getElementById('builder-deck-prev').addEventListener('click', () => {
+    builder.deckIdx = (builder.deckIdx - 1 + builder.draftDecks.length) % builder.draftDecks.length;
+    builder.selectedSlot = 0;
+    renderBuilder();
+  });
+  document.getElementById('builder-deck-next').addEventListener('click', () => {
     builder.deckIdx = (builder.deckIdx + 1) % builder.draftDecks.length;
     builder.selectedSlot = 0;
     renderBuilder();
