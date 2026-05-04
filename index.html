@@ -3888,7 +3888,7 @@
     const lvl = document.createElement('div');
     lvl.className = 'research-level';
     lvl.textContent = levelText;
-    row.appendChild(lvl);
+    if (levelText) row.appendChild(lvl);
 
     const btn = document.createElement('button');
     btn.className = 'research-claim' + (owed > 0 ? ' owed' : '');
@@ -3927,7 +3927,7 @@
       const row = makeResearchRow(
         goal.label + ': ' + raw.toLocaleString() + ' / ' + goal.target.toLocaleString(),
         value, pct,
-        complete ? 'Lv 1' : 'Lv 0',
+        null,
         owed,
         () => {
           if (!complete || researchDaily.claimed[goal.id]) return;
