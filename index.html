@@ -2917,11 +2917,8 @@
     // `_tint` is ignored; kept in the signature for caller compatibility.
     const mats = SLOT_FACE.map(v => {
       const idle = v === 1 && !!typeId;
-      return new THREE.MeshStandardMaterial({
+      return new THREE.MeshBasicMaterial({
         map: getSkinTex(skinId, faceKeyFor(v, { idle, typeId })),
-        color: 0xffffff,
-        roughness: 0.35,
-        metalness: 0.05,
       });
     });
     return new THREE.Mesh(GEO, mats);
@@ -2936,8 +2933,7 @@
       const matchTex = getSkinTex(skinId, 'FACE_9');
       die.mesh.material.forEach(m => {
         m.map = matchTex;
-        m.emissive.setHex(0x331022);
-        m.emissiveIntensity = 0.5;
+        m.color.setHex(0xff6680);  // warm tint to indicate match
       });
     } else {
       const texFn = die.isSelected ? getSkinTexSelected : getSkinTex;
@@ -2947,8 +2943,7 @@
         // rolled in this session — after that, face 1 always shows pips.
         const idle = slotFace === 1 && !die.hasRolled && !!die.typeId;
         m.map = texFn(skinId, faceKeyFor(slotFace, { idle, typeId: die.typeId }));
-        m.emissive.setHex(0x000000);
-        m.emissiveIntensity = 0;
+        m.color.setHex(0xffffff);
       });
       const r = FACE_TOWARD_CAMERA[face];
       die.mesh.rotation.set(r.x, r.y, r.z);
