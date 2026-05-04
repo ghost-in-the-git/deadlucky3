@@ -3309,23 +3309,36 @@
       });
     }, 100);
 
+    const baseScale = die.mesh.scale.x;
     die._tweening = true;
     await tween({
-      duration: 700,
+      duration: 1000,
       ease: easeOut,
       onUpdate: t => {
         die.mesh.rotation.x = r0.x + (destX - r0.x) * t;
         die.mesh.rotation.y = r0.y + (destY - r0.y) * t;
         die.mesh.rotation.z = r0.z + (target.z - r0.z) * t;
+        die.mesh.scale.setScalar(baseScale * (1 + 0.3 * Math.sin(t * Math.PI)));
       },
     });
     clearTimeout(_faceSwapTimer);
     die.mesh.rotation.set(target.x, target.y, target.z);
+    die.mesh.scale.setScalar(baseScale);
     die._tweening = false;
 
     die.face = finalFace;
     die.rolledFace = finalFace;
     showFace(die, finalFace);
+
+    // Landing bump — brief compress and spring back
+    await tween({
+      duration: 200,
+      ease: t => t,
+      onUpdate: t => {
+        die.mesh.scale.setScalar(baseScale * (1 - 0.1 * Math.sin(t * Math.PI)));
+      },
+    });
+    die.mesh.scale.setScalar(baseScale);
     game.session.lastRolledFace = finalFace;
     if (tut) {
       const _tutLock = TUT_STEPS[tut.step] && TUT_STEPS[tut.step].lock;
