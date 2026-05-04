@@ -3807,6 +3807,54 @@
     returnsEl.textContent = 0;
     updateStrip({});
     summaryEl.classList.remove('show');
+    dealHand();
+  }
+
+  function dealHand() {
+    const STAGGER  = 100;  // ms between each die
+    const DROP_MS  = 500;  // drop-in duration
+    const BUMP_MS  = 200;  // landing bump duration
+
+    game.animating++;
+    let done = 0;
+
+    for (let i = 0; i < N; i++) {
+      const die   = dice[i];
+      const final = locationPosition(die.location);
+      const LIFT  = final.size * 1.5;  // start this far above the slot
+
+      die._tweening = true;
+      die.mesh.position.set(final.x, final.y + LIFT, 0);
+      die.mesh.scale.setScalar(final.size * 1.3);
+
+      (async () => {
+        await new Promise(r => setTimeout(r, i * STAGGER));
+
+        await tween({
+          duration: DROP_MS,
+          ease: easeInOut,
+          onUpdate: t => {
+            die.mesh.position.y = final.y + LIFT * (1 - t);
+            die.mesh.scale.setScalar(final.size * (1 + 0.3 * (1 - t)));
+          },
+        });
+        die.mesh.position.set(final.x, final.y, 0);
+        die.mesh.scale.setScalar(final.size);
+
+        await tween({
+          duration: BUMP_MS,
+          ease: t => t,
+          onUpdate: t => {
+            die.mesh.scale.setScalar(final.size * (1 - 0.1 * Math.sin(t * Math.PI)));
+          },
+        });
+        die.mesh.scale.setScalar(final.size);
+        die._tweening = false;
+
+        done++;
+        if (done === N) game.animating--;
+      })();
+    }
   }
 
   // ─── Overlays: home / menu / options / name-entry ─────────────────────
