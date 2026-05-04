@@ -3838,6 +3838,7 @@
           onUpdate: t => {
             die.mesh.position.y = final.y + LIFT * (1 - t);
             die.mesh.scale.setScalar(final.size * (1 + 0.3 * (1 - t)));
+            die.mesh.rotation.x = (Math.PI / 6) * (1 - t);
           },
         });
         die.mesh.position.set(final.x, final.y, 0);
