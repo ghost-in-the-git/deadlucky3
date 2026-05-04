@@ -123,18 +123,17 @@
     }
     .tile.occupied .tile-value { opacity: 0; }
 
-    .tile-score {
+    .slot-score {
       position: absolute;
-      bottom: 5px;
-      right: 7px;
-      font-size: 0.75rem;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
       font-weight: 700;
       color: var(--accent);
-      opacity: 0;
-      transition: opacity 0.2s;
+      pointer-events: none;
     }
-
-    .tile.occupied .tile-score { opacity: 1; }
     .tile.matched { border-color: var(--accent); border-style: solid; }
     .tile.combo { background: rgba(58, 120, 220, 0.55); }
     @keyframes cross-pulse {
@@ -2670,7 +2669,7 @@
   for (let i = 0; i < N; i++) {
     const t = document.createElement('div');
     t.className = 'tile';
-    t.innerHTML = `<img class="tile-value" src="TILES/BOARD_TILES_BOARD_SLOT_VALUE_${tiles[i]}.png" alt="${tiles[i]}"><div class="tile-score"></div>`;
+    t.innerHTML = `<img class="tile-value" src="TILES/BOARD_TILES_BOARD_SLOT_VALUE_${tiles[i]}.png" alt="${tiles[i]}">`;
     t.addEventListener('click', () => onBoardTap(i));
     boardSection.appendChild(t);
     tileEls.push(t);
@@ -2680,6 +2679,7 @@
   for (let i = 0; i < N; i++) {
     const s = document.createElement('div');
     s.className = 'slot';
+    s.innerHTML = '<div class="slot-score"></div>';
     s.addEventListener('click', () => onHandTap(i));
     handSection.appendChild(s);
     slotEls.push(s);
@@ -3171,7 +3171,7 @@
   }
 
   // ─── Scoring pipeline ─────────────────────────────────────────────────
-  // Shared by end-of-turn scoring, tile-score preview, and placed-die
+  // Shared by end-of-turn scoring, slot-score preview, and placed-die
   // inspection — so displayed numbers always match what actually scores.
   function buildScoreCtx(die, tileIdx, flags) {
     const { isMatch = false, inTriple = false, inStraight = false, inCross = false } = flags || {};
@@ -3356,6 +3356,7 @@
     const die = dice[dieId];
     const slotIdx = findHandSlot(dieId);
 
+    die.originHandSlot = slotIdx;
     hand[slotIdx] = null;
     board[tileIdx] = dieId;
     setSlotClass(slotIdx, '');
@@ -3565,7 +3566,10 @@
     board[boardSlot] = null;
     hand[targetSlot] = die.id;
     tileEls[boardSlot].classList.remove('occupied', 'matched');
-    tileEls[boardSlot].querySelector('.tile-score').textContent = '';
+    slotEls[targetSlot].querySelector('.slot-score').textContent = '';
+    if (die.originHandSlot != null) {
+      slotEls[die.originHandSlot].querySelector('.slot-score').textContent = '';
+    }
     if (game.inspectedTile === boardSlot) clearInspection();
 
     // Any combo lines passing through this tile are no longer active
@@ -3705,7 +3709,7 @@
     }
   }, 1000);
 
-  // ─── Strip + tile-score preview ───────────────────────────────────────
+  // ─── Strip + slot-score preview ───────────────────────────────────────
   function updateStrip({ face, tile, power, combo, luck } = {}) {
     statFace.textContent  = face  != null ? face  : '—';
     statTile.textContent  = tile  != null ? tile  : '—';
@@ -3723,9 +3727,11 @@
   }
 
   function updateTilePreview(tileIdx) {
-    const el    = tileEls[tileIdx].querySelector('.tile-score');
     const dieId = board[tileIdx];
-    el.textContent = dieId == null ? '' : previewScore(tileIdx);
+    if (dieId == null) return;
+    const die = dice[dieId];
+    if (die.originHandSlot == null) return;
+    slotEls[die.originHandSlot].querySelector('.slot-score').textContent = previewScore(tileIdx);
   }
 
   function refreshAllTilePreviews() {
@@ -3739,7 +3745,7 @@
     for (let i = 0; i < N; i++) {
       tiles[i] = 1 + Math.floor(Math.random() * 6);
       tileEls[i].querySelector('.tile-value').src = 'TILES/BOARD_TILES_BOARD_SLOT_VALUE_' + tiles[i] + '.png';
-      tileEls[i].querySelector('.tile-score').textContent = '';
+      slotEls[i].querySelector('.slot-score').textContent = '';
       tileEls[i].classList.remove('occupied', 'matched', 'inspected', 'combo');
       slotEls[i].className = 'slot';
       hand[i]  = i;
