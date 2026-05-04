@@ -2729,8 +2729,7 @@
   //   Skins/SKIN_V2_{SKIN}.png        — die background/frame (one per skin)
   //   BlackIcons/ICONS_EVO_{KEY}.png  — black icon (normal state)
   //   WhiteIcons/ICONS EVO_{KEY}.png  — white icon (selected die state)
-  // Compositing uses multiply blend: white areas take on the skin colour,
-  // black areas stay black.
+  // Icons have transparent backgrounds and are composited with source-over.
   const SKIN_TEX          = {};   // skinId -> { KEY: THREE.Texture }
   const SKIN_TEX_SELECTED = {};   // skinId -> { KEY: THREE.Texture }
   const SKIN_BASE_IMG     = {};   // skinId -> HTMLImageElement
@@ -2826,11 +2825,8 @@
       ctx.clearRect(0, 0, 256, 256);
       if (base.complete && base.naturalWidth > 0)
         ctx.drawImage(base, 0, 0, 256, 256);
-      if (icon.complete && icon.naturalWidth > 0) {
-        ctx.globalCompositeOperation = 'multiply';
+      if (icon.complete && icon.naturalWidth > 0)
         ctx.drawImage(icon, 0, 0, 256, 256);
-        ctx.globalCompositeOperation = 'source-over';
-      }
       tex.image = offscreen;
       tex.needsUpdate = true;
     }
@@ -2869,11 +2865,8 @@
       ctx.clearRect(0, 0, 256, 256);
       if (base.complete && base.naturalWidth > 0)
         ctx.drawImage(base, 0, 0, 256, 256);
-      if (icon.complete && icon.naturalWidth > 0) {
-        ctx.globalCompositeOperation = 'multiply';
+      if (icon.complete && icon.naturalWidth > 0)
         ctx.drawImage(icon, 0, 0, 256, 256);
-        ctx.globalCompositeOperation = 'source-over';
-      }
     };
     render();
     if (!base.complete || !base.naturalWidth) _onImgReady(base, render);
