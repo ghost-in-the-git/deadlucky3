@@ -2994,9 +2994,14 @@
     };
   }
 
+  function dieZ(location) {
+    if (location.zone !== 'hand') return 0;
+    return Math.floor(location.slot / 3);  // row 0=top→0, 1=mid→1, 2=bottom→2
+  }
+
   function layoutDie(die) {
     const p = locationPosition(die.location);
-    die.mesh.position.set(p.x, p.y, 0);
+    die.mesh.position.set(p.x, p.y, dieZ(die.location));
     die.mesh.scale.setScalar(p.size);
   }
 
@@ -3823,9 +3828,10 @@
       const final = locationPosition(die.location);
       const LIFT  = final.size * 1.5;  // start this far above the slot
 
+      const finalZ = dieZ(die.location);
       die._tweening = true;
       die.mesh.visible = false;
-      die.mesh.position.set(final.x, final.y + LIFT, 0);
+      die.mesh.position.set(final.x, final.y + LIFT, finalZ);
       die.mesh.scale.setScalar(final.size * 1.3);
 
       (async () => {
@@ -3841,7 +3847,7 @@
             die.mesh.rotation.x = -(Math.PI / 6) * (1 - t);
           },
         });
-        die.mesh.position.set(final.x, final.y, 0);
+        die.mesh.position.set(final.x, final.y, finalZ);
         die.mesh.scale.setScalar(final.size);
 
         await tween({
