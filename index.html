@@ -3824,11 +3824,13 @@
       const LIFT  = final.size * 1.5;  // start this far above the slot
 
       die._tweening = true;
+      die.mesh.visible = false;
       die.mesh.position.set(final.x, final.y + LIFT, 0);
       die.mesh.scale.setScalar(final.size * 1.3);
 
       (async () => {
         await new Promise(r => setTimeout(r, i * STAGGER));
+        die.mesh.visible = true;
 
         await tween({
           duration: DROP_MS,
