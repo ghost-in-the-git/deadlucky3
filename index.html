@@ -2480,23 +2480,20 @@
                     ctx.fired = true;
                   }
                 }},
+    nothing:  { id: 'nothing',  name: 'Nothing',   color: 0xaaaaaa, badge: 'NTH', flavor: "doesn't seem to have any power" },
   };
   // Catalog order — starter collection = first 9.
   const DIE_TYPE_ORDER = [
     'gambler', 'lucky', 'moth', 'flight', 'sun', 'moon', 'angel', 'demon', 'reaper',
-    'copycat', 'dagger', 'sniper', 'vampire', 'lostLove', 'snake', 'trinity',
+    'copycat', 'dagger', 'sniper', 'vampire', 'lostLove', 'snake', 'trinity', 'nothing',
   ];
   const STARTER_COLLECTION = DIE_TYPE_ORDER.slice(0, 9);
 
   // ─── Skins ────────────────────────────────────────────────────────────
-  // A "skin" is a folder of pre-baked face PNGs. Files are stored under
-  //   DICE_SKINS/<SKIN_ID_UPPERCASE>/
-  //     FACE_1.png … FACE_6.png   (rolled faces, pips already baked in)
-  //     FACE_9.png                (match state)
-  //     <DIE_TYPE>.png            (trait/idle icon shown on face 1 at rest;
-  //                                filename matches die type id, uppercase)
-  // Each skin's PNGs assume a neutral background so the runtime die tint
-  // (material.color in 3D, multiply blend in 2D) lands cleanly on top.
+  // Skins are composited at runtime from two image layers:
+  //   Skins/SKIN_V2_{SKIN}.png        — die background/frame (one per skin)
+  //   BlackIcons/ICONS_EVO_{KEY}.png  — black icon, used normally
+  //   WhiteIcons/ICONS EVO_{KEY}.png  — white icon, used when die is selected
   const SKINS = {
     plain: { id: 'plain', name: 'Plain' },
     blood: { id: 'blood', name: 'Blood' },
@@ -2728,31 +2725,28 @@
   scene.add(fillLight);
 
   // ─── Skin texture loader ──────────────────────────────────────────────
-  // Every face texture is a pre-baked PNG on disk under DICE_SKINS/<SKIN>/.
-  // We load them lazily through a single shared cache so each PNG hits the
-  // disk once even when many dice share a skin. The cache stores both:
-  //   • a THREE.Texture (for the 3D mesh's MeshStandardMaterial.map)
-  //   • an HTMLImageElement (for 2D canvas previews in the deck builder /
-  //     summary board / reveal screens — which can't share THREE textures)
-  // This replaces the prior shader-injection skin overlay. Pre-baked PNGs
-  // mean: no canvas tainting on file://, no onBeforeCompile, no uniform
-  // plumbing — just a plain `m.map = tex` swap, the same pattern Three.js
   // Skin textures: each face is composited from two layers —
-  //   DICE_SKINS/SKINS/{SKIN}.png   — die background/frame (one per skin)
-  //   DICE_SKINS/ICONS/{KEY}.png    — shared black-on-white icon (one per face/type)
-  // Compositing uses multiply blend: white icon areas become the skin colour,
-  // black icon areas stay black. Adding a new skin needs only one base image.
-  const SKIN_TEX      = {};   // skinId -> { KEY: THREE.Texture }
-  const SKIN_BASE_IMG = {};   // skinId -> HTMLImageElement
-  const SKIN_ICON_IMG = {};   // key    -> HTMLImageElement
+  //   Skins/SKIN_V2_{SKIN}.png        — die background/frame (one per skin)
+  //   BlackIcons/ICONS_EVO_{KEY}.png  — black icon (normal state)
+  //   WhiteIcons/ICONS EVO_{KEY}.png  — white icon (selected die state)
+  // Compositing uses multiply blend: white areas take on the skin colour,
+  // black areas stay black.
+  const SKIN_TEX          = {};   // skinId -> { KEY: THREE.Texture }
+  const SKIN_TEX_SELECTED = {};   // skinId -> { KEY: THREE.Texture }
+  const SKIN_BASE_IMG     = {};   // skinId -> HTMLImageElement
+  const SKIN_ICON_IMG     = {};   // key    -> HTMLImageElement
+  const SKIN_ICON_WHITE_IMG = {}; // key    -> HTMLImageElement
   const _imgRedrawCbs = new WeakMap(); // img -> Set<callback>
 
   function _skinKey(k) { return String(k).toUpperCase(); }
   function skinBaseUrl(skinId) {
-    return `DICE_SKINS/SKINS/${skinId.toUpperCase()}.png`;
+    return `Skins/SKIN_V2_${skinId.toUpperCase()}.png`;
   }
   function skinIconUrl(key) {
-    return `DICE_SKINS/ICONS/${_skinKey(key)}.png`;
+    return `BlackIcons/ICONS_EVO_${_skinKey(key)}.png`;
+  }
+  function skinIconWhiteUrl(key) {
+    return `WhiteIcons/ICONS EVO_${_skinKey(key)}.png`;
   }
 
   function _onImgReady(img, cb) {
@@ -2794,13 +2788,27 @@
     return img;
   }
 
-  // Returns a THREE.Texture for (skinId, key). The texture image is an
-  // offscreen canvas that re-composites whenever either layer finishes loading.
-  function getSkinTex(skinId, key) {
+  function getSkinIconWhiteImg(key) {
+    const k = _skinKey(key);
+    if (SKIN_ICON_WHITE_IMG[k]) return SKIN_ICON_WHITE_IMG[k];
+    const img = new Image();
+    _fireOnLoad(img);
+    img.addEventListener('error', () => {
+      if (k !== 'FACE_1') {
+        console.warn('White icon missing, falling back to FACE_1:', img.src);
+        img.src = skinIconWhiteUrl('FACE_1');
+      }
+    });
+    img.src = skinIconWhiteUrl(k);
+    SKIN_ICON_WHITE_IMG[k] = img;
+    return img;
+  }
+
+  function _makeSkinTex(cache, skinId, key, iconFn) {
     const id = skinId || DEFAULT_SKIN;
     const k  = _skinKey(key);
-    if (!SKIN_TEX[id]) SKIN_TEX[id] = {};
-    const slot = SKIN_TEX[id];
+    if (!cache[id]) cache[id] = {};
+    const slot = cache[id];
     if (slot[k]) return slot[k];
 
     const tex = new THREE.Texture();
@@ -2811,7 +2819,7 @@
     const offscreen = document.createElement('canvas');
     offscreen.width = offscreen.height = 256;
     const base = getSkinBaseImg(id);
-    const icon = getSkinIconImg(k);
+    const icon = iconFn(k);
 
     function composite() {
       const ctx = offscreen.getContext('2d');
@@ -2833,6 +2841,15 @@
     return tex;
   }
 
+  // Returns a THREE.Texture for (skinId, key) using black icons (normal state).
+  function getSkinTex(skinId, key) {
+    return _makeSkinTex(SKIN_TEX, skinId, key, getSkinIconImg);
+  }
+  // Returns a THREE.Texture for (skinId, key) using white icons (selected state).
+  function getSkinTexSelected(skinId, key) {
+    return _makeSkinTex(SKIN_TEX_SELECTED, skinId, key, getSkinIconWhiteImg);
+  }
+
   // Resolve which icon file a given (face, matched, idle, typeId) combo wants.
   function faceKeyFor(face, { matched = false, idle = false, typeId = null } = {}) {
     if (matched) return 'FACE_9';
@@ -2847,7 +2864,7 @@
     const skin = skinId || DEFAULT_SKIN;
     const key  = faceKeyFor(pips, { matched, idle: opts.idle, typeId: opts.typeId });
     const base = getSkinBaseImg(skin);
-    const icon = getSkinIconImg(key);
+    const icon = opts.selected ? getSkinIconWhiteImg(key) : getSkinIconImg(key);
     const render = () => {
       ctx.clearRect(0, 0, 256, 256);
       if (base.complete && base.naturalWidth > 0)
@@ -2930,12 +2947,13 @@
         m.emissiveIntensity = 0.5;
       });
     } else {
+      const texFn = die.isSelected ? getSkinTexSelected : getSkinTex;
       die.mesh.material.forEach((m, i) => {
         const slotFace = SLOT_FACE[i];
         // Idle trait icon shows on face 1 only until the die is first
         // rolled in this session — after that, face 1 always shows pips.
         const idle = slotFace === 1 && !die.hasRolled && !!die.typeId;
-        m.map = getSkinTex(skinId, faceKeyFor(slotFace, { idle, typeId: die.typeId }));
+        m.map = texFn(skinId, faceKeyFor(slotFace, { idle, typeId: die.typeId }));
         m.emissive.setHex(0x000000);
         m.emissiveIntensity = 0;
       });
@@ -3063,6 +3081,23 @@
     slotEls[slotIdx].className = 'slot' + (cls ? ' ' + cls : '');
   }
 
+  function _selectDie(dieId) {
+    if (game.selectedDie != null) _deselectDie();
+    game.selectedDie = dieId;
+    if (dieId != null && dice[dieId]) {
+      dice[dieId].isSelected = true;
+      showFace(dice[dieId], 1);
+    }
+  }
+
+  function _deselectDie() {
+    if (game.selectedDie != null && dice[game.selectedDie]) {
+      dice[game.selectedDie].isSelected = false;
+      showFace(dice[game.selectedDie], 1);
+    }
+    game.selectedDie = null;
+  }
+
   function onHandTap(slotIdx) {
     if (game.ended || game.paused || game.animating > 0) return;
     if (game.rolledDie != null) return;      // must place first
@@ -3085,9 +3120,10 @@
     if (game.selectedDie === dieId) {
       rollDie(dieId);                        // second tap → roll
     } else {
-      if (game.selectedDie != null) setSlotClass(findHandSlot(game.selectedDie), '');
+      const prevSlot = game.selectedDie != null ? findHandSlot(game.selectedDie) : null;
+      if (prevSlot != null) setSlotClass(prevSlot, '');
       clearInspection();                     // only one highlight at a time
-      game.selectedDie = dieId;
+      _selectDie(dieId);
       setSlotClass(slotIdx, 'selected');
       updateStrip({ face: 0, tile: 0, power: 0, combo: 0, luck: 0 });
       const _tutLock = tut && TUT_STEPS[tut.step] && TUT_STEPS[tut.step].lock;
@@ -3198,7 +3234,7 @@
     const die = dice[dieId];
     if (game.selectedDie != null) {
       setSlotClass(findHandSlot(game.selectedDie), '');
-      game.selectedDie = null;
+      _deselectDie();
     }
     if (game.inspectedTile != null) {
       tileEls[game.inspectedTile].classList.remove('inspected');
@@ -3239,7 +3275,7 @@
     const die = dice[dieId];
     const slotIdx = findHandSlot(dieId);
 
-    game.selectedDie = null;
+    _deselectDie();
     game.rolledDie = dieId;
     game.rolls++;
     bumpDailyResearch('rolls');
@@ -3755,7 +3791,7 @@
     game.matches = 0;
     game.combos = 0;
     game.triggers = 0;
-    game.selectedDie = null;
+    _deselectDie();
     game.rolledDie = null;
     game.inspectedTile = null;
     game.ended = false;
