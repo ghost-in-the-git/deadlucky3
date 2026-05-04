@@ -2683,7 +2683,7 @@
   for (let i = 0; i < N; i++) {
     const t = document.createElement('div');
     t.className = 'tile';
-    t.innerHTML = `<img class="tile-value" src="Images/BOARD_SLOT_VALUE_${tiles[i]}.png" alt="${tiles[i]}"><div class="tile-score"></div>`;
+    t.innerHTML = `<img class="tile-value" src="TILES/BOARD_TILES_BOARD_SLOT_VALUE_${tiles[i]}.png" alt="${tiles[i]}"><div class="tile-score"></div>`;
     t.addEventListener('click', () => onBoardTap(i));
     boardSection.appendChild(t);
     tileEls.push(t);
@@ -3739,7 +3739,7 @@
     // Re-randomize tiles and refresh displayed values
     for (let i = 0; i < N; i++) {
       tiles[i] = 1 + Math.floor(Math.random() * 6);
-      tileEls[i].querySelector('.tile-value').src = 'Images/BOARD_SLOT_VALUE_' + tiles[i] + '.png';
+      tileEls[i].querySelector('.tile-value').src = 'TILES/BOARD_TILES_BOARD_SLOT_VALUE_' + tiles[i] + '.png';
       tileEls[i].querySelector('.tile-score').textContent = '';
       tileEls[i].classList.remove('occupied', 'matched', 'inspected', 'combo');
       slotEls[i].className = 'slot';
@@ -4221,7 +4221,7 @@
   function setupTutorialBoard() {
     TUT_TILES.forEach((v, i) => {
       tiles[i] = v;
-      tileEls[i].querySelector('.tile-value').src = 'Images/BOARD_SLOT_VALUE_' + v + '.png';
+      tileEls[i].querySelector('.tile-value').src = 'TILES/BOARD_TILES_BOARD_SLOT_VALUE_' + v + '.png';
     });
 
     // Place 7 pre-set dice on the board (dice IDs 0-6)
