@@ -3734,6 +3734,7 @@
 
   // ─── Reset ────────────────────────────────────────────────────────────
   function resetGame() {
+    endTutorial();
     // Re-randomize tiles and refresh displayed values
     for (let i = 0; i < N; i++) {
       tiles[i] = 1 + Math.floor(Math.random() * 6);
