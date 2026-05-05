@@ -507,10 +507,7 @@
       user-select: none;
     }
     .carousel-arrow {
-      position: absolute;
-      top: 50%;
-      transform: translateY(-50%);
-      z-index: 2;
+      flex-shrink: 0;
       width: 36px;
       height: 36px;
       border-radius: 50%;
@@ -528,8 +525,13 @@
     }
     .carousel-arrow:hover { background: rgba(0, 0, 0, 0.8); }
     .carousel-arrow:disabled { opacity: 0.25; cursor: not-allowed; }
-    .carousel-arrow.prev { left: 8px; }
-    .carousel-arrow.next { right: 8px; }
+    .carousel-controls {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      width: min(320px, 100%);
+    }
+    .carousel-controls .carousel-play { flex: 1; }
 
     .carousel-dots {
       display: flex;
@@ -1895,12 +1897,14 @@
       <span class="shrine-title">Select Mode</span>
     </div>
     <div class="carousel">
-      <button class="carousel-arrow prev" id="mode-prev" aria-label="Previous">‹</button>
       <div class="carousel-track" id="mode-track"></div>
-      <button class="carousel-arrow next" id="mode-next" aria-label="Next">›</button>
     </div>
     <div class="carousel-dots" id="mode-dots"></div>
-    <button class="carousel-play" id="mode-continue">Continue</button>
+    <div class="carousel-controls">
+      <button class="carousel-arrow prev" id="mode-prev" aria-label="Previous">‹</button>
+      <button class="carousel-play" id="mode-continue">Continue</button>
+      <button class="carousel-arrow next" id="mode-next" aria-label="Next">›</button>
+    </div>
   </div>
 
   <!-- Deck carousel -->
@@ -1910,12 +1914,14 @@
       <span class="shrine-title">Select Deck</span>
     </div>
     <div class="carousel">
-      <button class="carousel-arrow prev" id="deck-prev" aria-label="Previous">‹</button>
       <div class="carousel-track" id="deck-track"></div>
-      <button class="carousel-arrow next" id="deck-next" aria-label="Next">›</button>
     </div>
     <div class="carousel-dots" id="deck-dots"></div>
-    <button class="carousel-play" id="deck-play">Play</button>
+    <div class="carousel-controls">
+      <button class="carousel-arrow prev" id="deck-prev" aria-label="Previous">‹</button>
+      <button class="carousel-play" id="deck-play">Play</button>
+      <button class="carousel-arrow next" id="deck-next" aria-label="Next">›</button>
+    </div>
   </div>
 
   <!-- Shrine hub -->
@@ -4990,6 +4996,20 @@
       t.className = 'deck-title';
       t.textContent = 'Deck ' + (di + 1);
       card.appendChild(t);
+      const modeTiles = MODES[modeIdx] && MODES[modeIdx].tiles;
+      if (modeTiles) {
+        const boardGrid = document.createElement('div');
+        boardGrid.className = 'mode-board-preview';
+        modeTiles.forEach(v => {
+          const tile = document.createElement('div');
+          tile.className = 'mode-board-tile';
+          const img = document.createElement('img');
+          img.src = 'TILES/BOARD_TILES_BOARD_SLOT_VALUE_' + v + '.png';
+          tile.appendChild(img);
+          boardGrid.appendChild(tile);
+        });
+        card.appendChild(boardGrid);
+      }
       deckTrackEl.appendChild(card);
     });
     applyCarouselIndex(deckTrackEl, deckIdx);
