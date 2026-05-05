@@ -3370,8 +3370,17 @@
     const die = dice[dieId];
     const slotIdx = findHandSlot(dieId);
 
-    _deselectDie();
-    setDieOutlineColor(die, 0x27ae60);
+    // Capture current outline color (white if selected, black otherwise)
+    const _rollFromColor = new THREE.Color();
+    if (die._outlineMat) _rollFromColor.copy(die._outlineMat.color);
+    const _rollToColor = new THREE.Color(0x27ae60);
+    // Deselect other dice without resetting this die's color (tween handles it)
+    if (game.selectedDie != null) {
+      const _prev = dice[game.selectedDie];
+      if (_prev && _prev !== die) { _prev.isSelected = false; showFace(_prev, 1); setDieOutlineColor(_prev, 0x000000); }
+      game.selectedDie = null;
+    }
+    die.isSelected = false;
     game.rolledDie = dieId;
     game.rolls++;
     bumpDailyResearch('rolls');
@@ -3439,6 +3448,7 @@
         die.mesh.rotation.y = r0.y + (destY - r0.y) * t;
         die.mesh.rotation.z = r0.z + (target.z - r0.z) * t;
         die.mesh.scale.setScalar(baseScale * (1 + 0.3 * Math.sin(t * Math.PI)));
+        if (die._outlineMat) die._outlineMat.color.lerpColors(_rollFromColor, _rollToColor, t);
       },
     });
     clearTimeout(_faceSwapTimer);
