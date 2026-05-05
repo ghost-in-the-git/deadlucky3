@@ -3371,11 +3371,11 @@
     const slotIdx = findHandSlot(dieId);
 
     _deselectDie();
+    setDieOutlineColor(die, 0x27ae60);
     game.rolledDie = dieId;
     game.rolls++;
     bumpDailyResearch('rolls');
     bumpLifetimeResearch('rolls');
-    setSlotClass(slotIdx, 'rolled');
 
     // 1) Pick a random face. 2) Broadcast onRoll to every die — each hook
     // checks ctx.self === ctx.rolling to decide if it's the roller. Powers
@@ -3495,6 +3495,7 @@
     hand[slotIdx] = null;
     board[tileIdx] = dieId;
     setSlotClass(slotIdx, '');
+    setDieOutlineColor(die, 0x000000);
     die.location = { zone: 'board', slot: tileIdx };
     game.rolledDie = null;
 
