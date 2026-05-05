@@ -3329,12 +3329,10 @@
       _deselectDie();
     }
     if (game.inspectedTile != null) {
-      tileEls[game.inspectedTile].classList.remove('inspected');
       const prevDieId = board[game.inspectedTile];
       if (prevDieId != null) setDieOutlineColor(dice[prevDieId], 0x000000);
     }
     game.inspectedTile = tileIdx;
-    tileEls[tileIdx].classList.add('inspected');
     setDieOutlineColor(die, 0xffffff);
     const flags = { isMatch: die.isMatch, ...lineFlagsAtTile(tileIdx) };
     const ctx   = buildScoreCtx(die, tileIdx, flags);
@@ -3349,7 +3347,6 @@
 
   function clearInspection() {
     if (game.inspectedTile != null) {
-      tileEls[game.inspectedTile].classList.remove('inspected');
       const prevDieId = board[game.inspectedTile];
       if (prevDieId != null) setDieOutlineColor(dice[prevDieId], 0x000000);
       game.inspectedTile = null;
