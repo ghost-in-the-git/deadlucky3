@@ -3886,7 +3886,7 @@
         });
         die.mesh.position.set(final.x, final.y, 0);
         die.mesh.scale.setScalar(final.size);
-        playDeal();
+        if (!game.paused) playDeal();
 
         await tween({
           duration: BUMP_MS,
