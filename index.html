@@ -4996,20 +4996,6 @@
       t.className = 'deck-title';
       t.textContent = 'Deck ' + (di + 1);
       card.appendChild(t);
-      const modeTiles = MODES[modeIdx] && MODES[modeIdx].tiles;
-      if (modeTiles) {
-        const boardGrid = document.createElement('div');
-        boardGrid.className = 'mode-board-preview';
-        modeTiles.forEach(v => {
-          const tile = document.createElement('div');
-          tile.className = 'mode-board-tile';
-          const img = document.createElement('img');
-          img.src = 'TILES/BOARD_TILES_BOARD_SLOT_VALUE_' + v + '.png';
-          tile.appendChild(img);
-          boardGrid.appendChild(tile);
-        });
-        card.appendChild(boardGrid);
-      }
       deckTrackEl.appendChild(card);
     });
     applyCarouselIndex(deckTrackEl, deckIdx);
