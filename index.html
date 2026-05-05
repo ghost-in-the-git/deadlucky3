@@ -1188,21 +1188,17 @@
     .builder-slot {
       border: 1px solid var(--line);
       border-radius: 8px;
-      padding: 6px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 4px;
+      overflow: hidden;
       cursor: pointer;
       transition: border-color 0.15s, background 0.15s;
       background: rgba(255, 255, 255, 0.02);
+      aspect-ratio: 1;
     }
     .builder-slot canvas {
       width: 100%;
-      max-width: 52px;
-      aspect-ratio: 1 / 1;
-      border-radius: 6px;
+      height: 100%;
+      display: block;
+      border-radius: 0;
     }
     .builder-slot .slot-label {
       font-size: 0.55rem;
@@ -5298,10 +5294,6 @@
       // Builder slot shows the resting/idle trait icon on face 1, since
       // it's a "this is what your die looks like at rest" preview.
       el.appendChild(makePipCanvas(1, false, type && type.color, skinId, { idle: true, typeId }));
-      const label = document.createElement('div');
-      label.className = 'slot-label';
-      label.textContent = type ? type.name : '—';
-      el.appendChild(label);
       el.addEventListener('click', () => {
         builder.selectedSlot = i;
         renderBuilder();
