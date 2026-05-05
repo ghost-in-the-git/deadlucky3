@@ -354,13 +354,17 @@
     .home-user b { color: var(--ink); font-weight: 600; margin-left: 8px; }
 
     .home-chips {
+      display: flex;
+      gap: 20px;
       font-size: 0.7rem;
       letter-spacing: 0.18em;
       text-transform: uppercase;
       color: var(--ink-dim);
       margin-bottom: 8px;
     }
-    .home-chips b { color: #f5c542; font-weight: 700; margin-left: 8px; }
+    .home-chips b { font-weight: 700; margin-left: 6px; }
+    .home-chips .chips-val { color: #f5c542; }
+    .home-chips .shards-val { color: #7ecfff; }
 
     /* ─── Shrine hub ──────────────────────────────────────────────────── */
     .shrine-hub {
@@ -1881,7 +1885,10 @@
   <div class="overlay" id="home-screen" style="background: #000;">
     <h1>Dead Lucky</h1>
     <div class="home-user">Player<b id="home-username">—</b></div>
-    <div class="home-chips">Chips<b id="home-chips">0</b></div>
+    <div class="home-chips">
+      <span>Chips<b id="home-chips" class="chips-val">0</b></span>
+      <span>Shards<b id="home-shards" class="shards-val">0</b></span>
+    </div>
     <button class="menu-btn primary" id="home-play">Play</button>
     <button class="menu-btn" id="home-deck-builder">Deck Builder</button>
     <button class="menu-btn" id="home-shrine">Shrine</button>
@@ -3743,8 +3750,10 @@
   const sumChipsEl     = document.getElementById('sum-chips');
   const homeChipsEl    = document.getElementById('home-chips');
 
+  const homeShardsEl = document.getElementById('home-shards');
   function refreshChipsUI() {
-    if (homeChipsEl) homeChipsEl.textContent = chips;
+    if (homeChipsEl)  homeChipsEl.textContent  = chips;
+    if (homeShardsEl) homeShardsEl.textContent = shards;
   }
   // Currency strip lives inside the Shrine hub (added in Step 2). Until then
   // the setters just need a safe no-op fallback + home-chips refresh.
