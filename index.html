@@ -3656,6 +3656,33 @@
       }
     }
 
+    // Pre-return score bump: stagger each returning slot's score label
+    // up in size + white, matching dealHand's 100 ms stagger cadence.
+    const SCORE_STAGGER = 100;
+    const SCORE_BUMP_MS = 200;
+    let previewIdx = 0;
+    for (let i = 0; i < N; i++) {
+      const r = evalResult[i];
+      if (!r || !r.returning) continue;
+      const slotEl = slotEls[dice[snapshot[i].id].originHandSlot];
+      if (!slotEl) { previewIdx++; continue; }
+      const scoreEl2 = slotEl.querySelector('.slot-score');
+      if (!scoreEl2) { previewIdx++; continue; }
+      const delay = previewIdx * SCORE_STAGGER;
+      previewIdx++;
+      (async () => {
+        await new Promise(res => setTimeout(res, delay));
+        if (!game.paused) playDeal();
+        scoreEl2.style.transition = `transform ${SCORE_BUMP_MS}ms ease-out, color ${SCORE_BUMP_MS}ms ease-out`;
+        scoreEl2.style.transform = 'scale(1.6)';
+        scoreEl2.style.color = '#ffffff';
+        await new Promise(res => setTimeout(res, SCORE_BUMP_MS));
+        scoreEl2.style.transform = '';
+      })();
+    }
+    // Wait for all bumps to finish before dice start moving
+    await new Promise(res => setTimeout(res, previewIdx * SCORE_STAGGER + SCORE_BUMP_MS));
+
     let returnedCount = 0;
     for (let i = 0; i < N; i++) {
       const r = evalResult[i];
@@ -3714,7 +3741,11 @@
     hand[targetSlot] = die.id;
     tileEls[boardSlot].classList.remove('occupied', 'matched');
     if (die.originHandSlot != null) {
-      slotEls[die.originHandSlot].querySelector('.slot-score').textContent = '';
+      const _sc = slotEls[die.originHandSlot].querySelector('.slot-score');
+      _sc.textContent = '';
+      _sc.style.transform = '';
+      _sc.style.color = '';
+      _sc.style.transition = '';
       die.originHandSlot = null;
     }
     if (game.inspectedTile === boardSlot) clearInspection();
