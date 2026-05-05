@@ -3883,6 +3883,7 @@
         });
         die.mesh.position.set(final.x, final.y, 0);
         die.mesh.scale.setScalar(final.size);
+        playDeal();
 
         await tween({
           duration: BUMP_MS,
@@ -5424,6 +5425,7 @@
   // ─── Audio ────────────────────────────────────────────────────────────
   let _bgmAudio = null;
   let _rollAudio = null;
+  let _dealAudio = null;
 
   function initAudio() {
     // Background music — loop forever
@@ -5436,13 +5438,25 @@
     _rollAudio = new Audio('sound/Dice Roll Swoosh Final.mp3');
     _rollAudio.volume = 1.0;
     _rollAudio.load();
+
+    // Pre-load the deal sound (cloned per-hit for polyphony)
+    _dealAudio = new Audio('sound/DEAL.mp3');
+    _dealAudio.volume = 1.0;
+    _dealAudio.load();
   }
 
   function playDiceRoll() {
     if (!_rollAudio) return;
-    // Rewind so rapid rolls don't get swallowed
     _rollAudio.currentTime = 0;
     _rollAudio.play().catch(() => {});
+  }
+
+  function playDeal() {
+    if (!_dealAudio) return;
+    // Clone so staggered hits don't cut each other off
+    const clone = _dealAudio.cloneNode();
+    clone.volume = _dealAudio.volume;
+    clone.play().catch(() => {});
   }
 
   // ─── Splash screen ────────────────────────────────────────────────────
