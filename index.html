@@ -594,42 +594,44 @@
     }
 
     .deck-card .deck-title {
-      font-size: 0.9rem;
+      font-size: 1.3rem;
       letter-spacing: 0.2em;
       text-transform: uppercase;
       color: var(--ink);
       font-weight: 700;
     }
+    .deck-card .deck-desc {
+      font-size: 0.68rem;
+      letter-spacing: 0.12em;
+      color: var(--ink-dim);
+      text-align: center;
+      text-transform: uppercase;
+    }
     .deck-mini-grid {
       display: grid;
-      grid-template-columns: repeat(3, 44px);
-      grid-template-rows: repeat(3, 44px);
-      gap: 4px;
-      justify-content: center;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 5px;
+      width: 100%;
+      margin: 6px 0;
     }
     .deck-mini-die {
-      border-radius: 5px;
+      aspect-ratio: 1;
+      border-radius: 8px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 0.55rem;
-      letter-spacing: 0.06em;
-      font-weight: 700;
-      color: rgba(0, 0, 0, 0.72);
-      text-shadow: 0 1px 0 rgba(255, 255, 255, 0.35);
       overflow: hidden;
     }
     .deck-mini-die canvas {
       width: 100%;
       height: 100%;
       display: block;
-      border-radius: 5px;
+      border-radius: 8px;
     }
     .deck-mini-die.empty {
-      background: transparent;
-      border: 1px dashed var(--line);
+      border: 1px dashed var(--line-strong);
+      background: rgba(255,255,255,0.02);
       color: var(--ink-dim);
-      text-shadow: none;
     }
 
     .carousel-play {
@@ -4974,6 +4976,15 @@
     decks.forEach((deck, di) => {
       const card = document.createElement('div');
       card.className = 'carousel-card deck-card';
+      const t = document.createElement('div');
+      t.className = 'deck-title';
+      t.textContent = 'Deck ' + (di + 1);
+      card.appendChild(t);
+      const filledCount = deck.filter(Boolean).length;
+      const desc = document.createElement('div');
+      desc.className = 'deck-desc';
+      desc.textContent = filledCount + ' / ' + N + ' dice';
+      card.appendChild(desc);
       const grid = document.createElement('div');
       grid.className = 'deck-mini-grid';
       const skins = deckSkins[di];
@@ -4987,15 +4998,10 @@
           slot.appendChild(makePipCanvas(1, false, type.color, skinId, { idle: true, typeId }));
         } else {
           slot.classList.add('empty');
-          slot.textContent = '—';
         }
         grid.appendChild(slot);
       }
       card.appendChild(grid);
-      const t = document.createElement('div');
-      t.className = 'deck-title';
-      t.textContent = 'Deck ' + (di + 1);
-      card.appendChild(t);
       deckTrackEl.appendChild(card);
     });
     applyCarouselIndex(deckTrackEl, deckIdx);
