@@ -568,6 +568,28 @@
       padding: 3px 8px;
       margin-top: 4px;
     }
+    .mode-board-preview {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 5px;
+      width: 100%;
+      margin: 6px 0;
+    }
+    .mode-board-tile {
+      aspect-ratio: 1;
+      border: 1px dashed var(--line-strong);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      background: rgba(255,255,255,0.02);
+    }
+    .mode-board-tile img {
+      width: 65%;
+      height: 65%;
+      object-fit: contain;
+    }
 
     .deck-card .deck-title {
       font-size: 0.9rem;
@@ -4856,10 +4878,20 @@
   }
 
   // ─── Mode + Deck carousels ────────────────────────────────────────────
+  function _dailyTiles() {
+    const seed = todayUTCKey().split('-').reduce((a, v) => a * 100 + (+v), 0);
+    let s = seed | 0;
+    const rng = () => { s = (Math.imul(1664525, s) + 1013904223) | 0; return (s >>> 0) / 0xFFFFFFFF; };
+    return Array.from({ length: 9 }, () => 1 + Math.floor(rng() * 6));
+  }
+
   const MODES = [
-    { id: 'ranked',   title: 'Ranked',   desc: 'Climb the daily leaderboard', enabled: true  },
-    { id: 'unranked', title: 'Unranked', desc: 'Casual play, no rank change', enabled: true  },
-    { id: 'story',    title: 'Story',    desc: 'Narrative challenges',        enabled: false },
+    { id: 'ranked',   title: 'Ranked',   desc: 'Climb the daily leaderboard', enabled: true,
+      tiles: _dailyTiles() },
+    { id: 'unranked', title: 'Unranked', desc: 'Casual play, no rank change',  enabled: true,
+      tiles: [2, 5, 1, 4, 3, 6, 1, 4, 2] },
+    { id: 'story',    title: 'Story',    desc: 'Narrative challenges',         enabled: false,
+      tiles: [1, 2, 3, 4, 5, 6, 5, 4, 3] },
   ];
   let modeIdx = 0;
   let deckIdx = 0;
@@ -4886,6 +4918,19 @@
       d.className = 'mode-desc';
       d.textContent = m.desc;
       card.appendChild(d);
+      if (m.tiles) {
+        const grid = document.createElement('div');
+        grid.className = 'mode-board-preview';
+        m.tiles.forEach(v => {
+          const tile = document.createElement('div');
+          tile.className = 'mode-board-tile';
+          const img = document.createElement('img');
+          img.src = 'TILES/BOARD_TILES_BOARD_SLOT_VALUE_' + v + '.png';
+          tile.appendChild(img);
+          grid.appendChild(tile);
+        });
+        card.appendChild(grid);
+      }
       if (!m.enabled) {
         const cs = document.createElement('div');
         cs.className = 'coming-soon';
