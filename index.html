@@ -2986,6 +2986,15 @@
     const typeId = currentDeck()[i] || 'gambler';
     const skinId = currentDeckSkins()[i] || DEFAULT_SKIN;
     const mesh   = makeDieMesh(DIE_TYPES[typeId] && DIE_TYPES[typeId].color, skinId, typeId);
+    const outlineMat  = new THREE.MeshBasicMaterial({
+      color: 0x000000,
+      side: THREE.FrontSide,
+      depthTest: false,
+    });
+    const outlineMesh = new THREE.Mesh(GEO, outlineMat);
+    outlineMesh.scale.setScalar(1.08);
+    outlineMesh.renderOrder = -0.5;
+    mesh.add(outlineMesh);
     const die = {
       id: i,
       typeId,
@@ -2993,6 +3002,8 @@
       type: DIE_TYPES[typeId],
       state: { power: 0 },
       mesh,
+      _outlineMat:  outlineMat,
+      _outlineMesh: outlineMesh,
       face: 1,
       rolledFace: 1,
       isMatch: false,
@@ -3030,10 +3041,16 @@
   }
 
   function layoutDie(die) {
-    const p = locationPosition(die.location);
+    const p   = locationPosition(die.location);
+    const row = dieRow(die.location);
     die.mesh.position.set(p.x, p.y, 0);
-    die.mesh.renderOrder = dieRow(die.location);
+    die.mesh.renderOrder = row;
+    if (die._outlineMesh) die._outlineMesh.renderOrder = row - 0.5;
     die.mesh.scale.setScalar(p.size);
+  }
+
+  function setDieOutlineColor(die, hex) {
+    if (die._outlineMat) die._outlineMat.color.setHex(hex);
   }
 
   function resizeRenderer() {
