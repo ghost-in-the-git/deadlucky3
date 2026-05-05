@@ -4356,8 +4356,8 @@
   }
 
   function openTutorial() {
-    tut = { step: 0 };
     resetGame();
+    tut = { step: 0 };    // set after resetGame so endTutorial() inside doesn't clear it
     showOverlay(null);    // reveal the board behind the welcome card
     setupTutorialBoard();
     tutShowCard(TUT_STEPS[0]);
