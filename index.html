@@ -3387,8 +3387,7 @@
     // totalReturns — it's an out-of-band return.
     for (const d of ctx.deferred) {
       if (d.type === 'reap' && board[d.boardSlot] === d.dieId) {
-        const reaped = dice[d.dieId];
-        await returnDie(reaped, reaped.originHandSlot);
+        await returnDie(dice[d.dieId]);
         refreshAllTilePreviews();
       }
     }
@@ -3609,14 +3608,9 @@
     if (returnedCount === 0)             return endSession('bust');
   }
 
-  async function returnDie(die, preferredSlot = -1) {
-    let targetSlot = -1;
-    if (preferredSlot >= 0 && hand[preferredSlot] == null) {
-      targetSlot = preferredSlot;
-    } else {
-      for (let i = 0; i < N; i++) if (hand[i] == null) { targetSlot = i; break; }
-    }
-    if (targetSlot === -1) return;
+  async function returnDie(die) {
+    const targetSlot = die.originHandSlot;
+    if (targetSlot == null || hand[targetSlot] != null) return;
 
     const boardSlot = die.location.slot;
     board[boardSlot] = null;
