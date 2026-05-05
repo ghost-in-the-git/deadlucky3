@@ -5428,6 +5428,7 @@
   let _bgmAudio = null;
   let _rollAudio = null;
   let _dealAudio = null;
+  let _selectAudio = null;
 
   function initAudio() {
     // Background music — loop forever
@@ -5445,12 +5446,23 @@
     _dealAudio = new Audio('sound/DEAL.mp3');
     _dealAudio.volume = 1.0;
     _dealAudio.load();
+
+    _selectAudio = new Audio('sound/SELECT.mp3');
+    _selectAudio.volume = 1.0;
+    _selectAudio.load();
   }
 
   function playDiceRoll() {
     if (!_rollAudio) return;
     _rollAudio.currentTime = 0;
     _rollAudio.play().catch(() => {});
+  }
+
+  function playSelect() {
+    if (!_selectAudio) return;
+    const clone = _selectAudio.cloneNode();
+    clone.volume = _selectAudio.volume;
+    clone.play().catch(() => {});
   }
 
   function playDeal() {
@@ -5503,6 +5515,11 @@
       }
     }, { once: true });
   }
+
+  // Play SELECT sfx on every button click
+  document.addEventListener('click', e => {
+    if (e.target.closest('button')) playSelect();
+  });
 
   // ─── Init ─────────────────────────────────────────────────────────────
   requestAnimationFrame(() => {
