@@ -2382,6 +2382,7 @@
     selectedDie: null,
     rolledDie: null,
     inspectedTile: null,
+    _emptySlotInspect: null,
     ended: false,
     animating: 0,
     paused: false,   // true when any overlay is open
@@ -3157,6 +3158,12 @@
     if (game.ended || game.paused || game.animating > 0) return;
     if (game.rolledDie != null) return;      // must place first
 
+    // Clear any previous empty-slot inspection highlight
+    if (game._emptySlotInspect != null) {
+      setSlotClass(game._emptySlotInspect, '');
+      game._emptySlotInspect = null;
+    }
+
     // Tutorial locks
     if (tut) {
       const lock = TUT_STEPS[tut.step] && TUT_STEPS[tut.step].lock;
@@ -3170,7 +3177,25 @@
     }
 
     const dieId = hand[slotIdx];
-    if (dieId == null) return;
+
+    // Empty slot — show info for the die that came from here (if on board)
+    if (dieId == null) {
+      let boardDie = null;
+      for (let i = 0; i < N; i++) {
+        if (board[i] != null && dice[board[i]].originHandSlot === slotIdx) {
+          boardDie = dice[board[i]]; break;
+        }
+      }
+      if (!boardDie) return;
+      if (game.selectedDie != null) {
+        setSlotClass(findHandSlot(game.selectedDie), '');
+        _deselectDie();
+      }
+      inspectTile(boardDie.location.slot);   // highlights tile + fills strip
+      setSlotClass(slotIdx, 'selected');     // also highlight the origin slot
+      game._emptySlotInspect = slotIdx;
+      return;
+    }
 
     if (game.selectedDie === dieId) {
       rollDie(dieId);                        // second tap → roll
@@ -3188,6 +3213,10 @@
 
   function onBoardTap(tileIdx) {
     if (game.ended || game.paused || game.animating > 0) return;
+    if (game._emptySlotInspect != null) {
+      setSlotClass(game._emptySlotInspect, '');
+      game._emptySlotInspect = null;
+    }
 
     // Tutorial: only the target tile is allowed during placement steps
     if (tut) {
