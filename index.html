@@ -3588,6 +3588,7 @@
       returnedCount++;
     }
 
+    refreshAllTilePreviews();
     updateStrip({});
 
     // Tutorial: after second placement + return sweep, show "7 dice came home" card
@@ -3615,7 +3616,6 @@
     board[boardSlot] = null;
     hand[targetSlot] = die.id;
     tileEls[boardSlot].classList.remove('occupied', 'matched');
-    slotEls[targetSlot].querySelector('.slot-score').textContent = '';
     if (die.originHandSlot != null) {
       slotEls[die.originHandSlot].querySelector('.slot-score').textContent = '';
     }
