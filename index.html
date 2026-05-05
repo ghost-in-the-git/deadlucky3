@@ -3150,6 +3150,7 @@
     if (dieId != null && dice[dieId]) {
       dice[dieId].isSelected = true;
       showFace(dice[dieId], 1);
+      setDieOutlineColor(dice[dieId], 0xffffff);
     }
   }
 
@@ -3157,6 +3158,7 @@
     if (game.selectedDie != null && dice[game.selectedDie]) {
       dice[game.selectedDie].isSelected = false;
       showFace(dice[game.selectedDie], 1);
+      setDieOutlineColor(dice[game.selectedDie], 0x000000);
     }
     game.selectedDie = null;
   }
@@ -3211,7 +3213,6 @@
       if (prevSlot != null) setSlotClass(prevSlot, '');
       clearInspection();                     // only one highlight at a time
       _selectDie(dieId);
-      setSlotClass(slotIdx, 'selected');
       updateStrip({ face: 0, tile: 0, power: 0, combo: 0, luck: 0 });
       const _tutLock = tut && TUT_STEPS[tut.step] && TUT_STEPS[tut.step].lock;
       if (_tutLock === 'select-1' || _tutLock === 'select-2') advanceTutorial();
