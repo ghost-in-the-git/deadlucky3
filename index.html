@@ -3658,8 +3658,10 @@
 
     // Pre-return score bump: stagger each returning slot's score label
     // up in size + white before dice fly home.
-    const SCORE_STAGGER = 500;
-    const SCORE_BUMP_MS = 200;
+    const SCORE_STAGGER  = 500;
+    const SCORE_BUMP_UP  = 150;  // 100% → 300%
+    const SCORE_BUMP_SET = 150;  // 300% → 250% settle
+    const SCORE_BUMP_MS  = SCORE_BUMP_UP + SCORE_BUMP_SET;
     let previewIdx = 0;
     for (let i = 0; i < N; i++) {
       const r = evalResult[i];
@@ -3673,11 +3675,12 @@
       (async () => {
         await new Promise(res => setTimeout(res, delay));
         if (!game.paused) playDeal();
-        scoreEl2.style.transition = `transform ${SCORE_BUMP_MS}ms ease-out, color ${SCORE_BUMP_MS}ms ease-out`;
-        scoreEl2.style.transform = 'scale(1.6)';
+        scoreEl2.style.transition = `transform ${SCORE_BUMP_UP}ms ease-out, color ${SCORE_BUMP_UP}ms ease-out`;
+        scoreEl2.style.transform = 'scale(3.0)';
         scoreEl2.style.color = '#ffffff';
-        await new Promise(res => setTimeout(res, SCORE_BUMP_MS));
-        scoreEl2.style.transform = '';
+        await new Promise(res => setTimeout(res, SCORE_BUMP_UP));
+        scoreEl2.style.transition = `transform ${SCORE_BUMP_SET}ms ease-out`;
+        scoreEl2.style.transform = 'scale(2.5)';
       })();
     }
     // Wait for all bumps to finish, then hold a full second before dice move
