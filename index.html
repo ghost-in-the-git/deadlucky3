@@ -3281,6 +3281,7 @@
 
   // ─── Roll ─────────────────────────────────────────────────────────────
   async function rollDie(dieId) {
+    playDiceRoll();
     const die = dice[dieId];
     const slotIdx = findHandSlot(dieId);
 
@@ -5420,6 +5421,30 @@
     });
   });
 
+  // ─── Audio ────────────────────────────────────────────────────────────
+  let _bgmAudio = null;
+  let _rollAudio = null;
+
+  function initAudio() {
+    // Background music — loop forever
+    _bgmAudio = new Audio('sound/HEARTBEAT_FINAL.mp3');
+    _bgmAudio.loop   = true;
+    _bgmAudio.volume = 0.6;
+    _bgmAudio.play().catch(() => {});
+
+    // Pre-load the roll sound so it fires instantly
+    _rollAudio = new Audio('sound/Dice Roll Swoosh Final.mp3');
+    _rollAudio.volume = 1.0;
+    _rollAudio.load();
+  }
+
+  function playDiceRoll() {
+    if (!_rollAudio) return;
+    // Rewind so rapid rolls don't get swallowed
+    _rollAudio.currentTime = 0;
+    _rollAudio.play().catch(() => {});
+  }
+
   // ─── Splash screen ────────────────────────────────────────────────────
   let splashRaf = null;
   function initSplash() {
@@ -5453,6 +5478,7 @@
       if (!window._audioCtx) {
         try { window._audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e) {}
       }
+      initAudio();
       if (!username) {
         showOverlay(nameEntry);
         nameInput.focus();
