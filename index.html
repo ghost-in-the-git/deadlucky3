@@ -3388,6 +3388,7 @@
     for (const d of ctx.deferred) {
       if (d.type === 'reap' && board[d.boardSlot] === d.dieId) {
         await returnDie(dice[d.dieId]);
+        refreshAllTilePreviews();
       }
     }
 
@@ -3618,6 +3619,7 @@
     tileEls[boardSlot].classList.remove('occupied', 'matched');
     if (die.originHandSlot != null) {
       slotEls[die.originHandSlot].querySelector('.slot-score').textContent = '';
+      die.originHandSlot = null;
     }
     if (game.inspectedTile === boardSlot) clearInspection();
 
