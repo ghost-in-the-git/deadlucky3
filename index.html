@@ -3306,9 +3306,14 @@
     playSelect();
     const _tileImg = tileEls[tileIdx].querySelector('.tile-value');
     if (_tileImg) {
-      _tileImg.style.transition = 'transform 80ms ease-out';
+      _tileImg.style.transition = 'transform 80ms ease-out, opacity 80ms ease-out';
       _tileImg.style.transform  = 'scale(1.2)';
-      setTimeout(() => { _tileImg.style.transition = 'transform 120ms ease-out'; _tileImg.style.transform = ''; }, 80);
+      _tileImg.style.opacity    = '0.5';
+      setTimeout(() => {
+        _tileImg.style.transition = 'transform 120ms ease-out, opacity 120ms ease-out';
+        _tileImg.style.transform  = '';
+        _tileImg.style.opacity    = '';
+      }, 80);
     }
     placeDie(game.rolledDie, tileIdx);
   }
