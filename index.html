@@ -3872,8 +3872,9 @@
 
     // Bust: no dice came back — show dramatic message then end session
     if (returnedCount === 0) {
-      roundTallyEl.textContent = 'NO DICE';
-      roundStreakEl.textContent = `YOU LOST WITH ${RETURN_CAP - game.totalReturns} RETURNS REMAINING`;
+      roundTallyEl.textContent      = 'NO DICE';
+      roundMultiplierEl.textContent = '';
+      roundStreakEl.textContent     = `YOU LOST WITH ${RETURN_CAP - game.totalReturns} RETURNS REMAINING`;
       await new Promise(res => setTimeout(res, 2000));
       roundCounterEl.style.transition = 'opacity 0.4s ease-out';
       roundCounterEl.style.opacity = '0';
