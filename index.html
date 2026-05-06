@@ -3720,7 +3720,7 @@
         await new Promise(res => setTimeout(res, SCORE_BUMP_UP));
         scoreEl2.style.transition = `transform ${SCORE_BUMP_SET}ms ease-out`;
         scoreEl2.style.transform = 'scale(2.5)';
-      })(roundTally, roundTally + dieScore)();
+      })(roundTally, roundTally + dieScore);
       roundTally += dieScore;
     }
     // Wait for all bumps to finish, then hold a full second before dice move
