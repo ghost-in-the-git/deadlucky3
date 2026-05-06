@@ -4019,12 +4019,28 @@
   }, 1000);
 
   // ─── Strip + slot-score preview ───────────────────────────────────────
+  let _stripTimeouts = [];
   function updateStrip({ face, tile, power, combo, luck } = {}) {
-    statFace.textContent  = face  != null ? face  : '—';
-    statTile.textContent  = tile  != null ? tile  : '—';
-    statPower.textContent = power != null ? power : '—';
-    statCombo.textContent = '×' + (combo != null ? combo : 1);
-    statLuck.textContent  = luck  != null ? luck  : game.luck;
+    _stripTimeouts.forEach(clearTimeout);
+    _stripTimeouts = [];
+    const entries = [
+      { el: statFace,  text: face  != null ? String(face)  : '—' },
+      { el: statTile,  text: tile  != null ? String(tile)  : '—' },
+      { el: statPower, text: power != null ? String(power) : '—' },
+      { el: statCombo, text: '×' + (combo != null ? combo : 1) },
+      { el: statLuck,  text: luck  != null ? String(luck)  : String(game.luck) },
+    ];
+    entries.forEach(({ el, text }, i) => {
+      _stripTimeouts.push(setTimeout(() => {
+        el.textContent = text;
+        el.style.transition = 'transform 80ms ease-out';
+        el.style.transform  = 'scale(1.05)';
+        setTimeout(() => {
+          el.style.transition = 'transform 120ms ease-out';
+          el.style.transform  = '';
+        }, 80);
+      }, i * 500));
+    });
   }
 
   function previewScore(tileIdx) {
