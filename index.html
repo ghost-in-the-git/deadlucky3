@@ -3743,14 +3743,17 @@
     board[boardSlot] = null;
     hand[targetSlot] = die.id;
     tileEls[boardSlot].classList.remove('occupied', 'matched');
-    if (die.originHandSlot != null) {
-      const _sc = slotEls[die.originHandSlot].querySelector('.slot-score');
+    // Delay score clear so the number stays visible while the die travels home
+    const _clearSlot = die.originHandSlot;
+    setTimeout(() => {
+      if (_clearSlot == null) return;
+      const _sc = slotEls[_clearSlot].querySelector('.slot-score');
       _sc.textContent = '';
       _sc.style.transform = '';
       _sc.style.color = '';
       _sc.style.transition = '';
-      die.originHandSlot = null;
-    }
+    }, 600);
+    die.originHandSlot = null;
     if (game.inspectedTile === boardSlot) clearInspection();
 
     // Any combo lines passing through this tile are no longer active
