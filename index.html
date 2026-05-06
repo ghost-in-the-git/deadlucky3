@@ -3203,9 +3203,17 @@
     if (game.selectedDie != null) _deselectDie();
     game.selectedDie = dieId;
     if (dieId != null && dice[dieId]) {
-      dice[dieId].isSelected = true;
-      showFace(dice[dieId], 1);
-      setDieOutlineColor(dice[dieId], 0xffffff);
+      const die = dice[dieId];
+      die.isSelected = true;
+      showFace(die, 1);
+      setDieOutlineColor(die, 0xffffff);
+      // Quick bump
+      const baseScale = die.mesh.scale.x;
+      tween({
+        duration: 120,
+        ease: t => Math.sin(t * Math.PI),
+        onUpdate: t => die.mesh.scale.setScalar(baseScale * (1 + 0.12 * t)),
+      }).then(() => die.mesh.scale.setScalar(baseScale));
     }
   }
 
