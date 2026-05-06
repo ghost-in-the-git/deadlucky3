@@ -3383,10 +3383,17 @@
     }
     if (game.inspectedTile != null) {
       const prevDieId = board[game.inspectedTile];
-      if (prevDieId != null) setDieOutlineColor(dice[prevDieId], 0x000000);
+      if (prevDieId != null) {
+        setDieOutlineColor(dice[prevDieId], 0x000000);
+        // Clear score highlight on the previous die's origin slot
+        const prevOrigin = dice[prevDieId].originHandSlot;
+        if (prevOrigin != null) slotEls[prevOrigin].querySelector('.slot-score').style.color = '';
+      }
     }
     game.inspectedTile = tileIdx;
     setDieOutlineColor(die, 0xffffff);
+    // White-highlight the score number in this die's origin hand slot
+    if (die.originHandSlot != null) slotEls[die.originHandSlot].querySelector('.slot-score').style.color = '#ffffff';
     const flags = { isMatch: die.isMatch, ...lineFlagsAtTile(tileIdx) };
     const ctx   = buildScoreCtx(die, tileIdx, flags);
     updateStrip({
@@ -3401,7 +3408,11 @@
   function clearInspection() {
     if (game.inspectedTile != null) {
       const prevDieId = board[game.inspectedTile];
-      if (prevDieId != null) setDieOutlineColor(dice[prevDieId], 0x000000);
+      if (prevDieId != null) {
+        setDieOutlineColor(dice[prevDieId], 0x000000);
+        const prevOrigin = dice[prevDieId].originHandSlot;
+        if (prevOrigin != null) slotEls[prevOrigin].querySelector('.slot-score').style.color = '';
+      }
       game.inspectedTile = null;
     }
   }
