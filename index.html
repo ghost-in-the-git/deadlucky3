@@ -4072,7 +4072,7 @@
     sumMatchesEl.textContent  = game.matches;
     sumCombosEl.textContent   = game.combos;
     sumTriggersEl.textContent = game.triggers;
-    sumChipsEl.textContent    = chips;
+    if (sumChipsEl) sumChipsEl.textContent = chips;
     renderSummaryBoard();
     updateCountdown();
     summaryEl.classList.add('show');
