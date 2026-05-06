@@ -3776,7 +3776,6 @@
     roundMultiplierEl.textContent = '× 1';
     roundStreakEl.textContent     = '';
     roundCounterEl.style.display  = 'flex';
-    if (_counterAudio) { _counterAudio.currentTime = 0; _counterAudio.play().catch(() => {}); }
 
     let roundTally = 0;
     let returnStreakCount = 0;
@@ -3797,6 +3796,7 @@
       (async (fromTally, toTally, streak, count) => {
         await new Promise(res => setTimeout(res, delay));
         if (!game.paused) playDeal();
+        if (_counterAudio) { _counterAudio.currentTime = 0; _counterAudio.play().catch(() => {}); }
         scoreEl2.style.transition = `transform ${SCORE_BUMP_UP}ms ease-out, color ${SCORE_BUMP_UP}ms ease-out`;
         scoreEl2.style.transform = 'scale(3.0)';
         scoreEl2.style.color = '#ffffff';
@@ -5818,7 +5818,6 @@
     _selectAudio.load();
 
     _counterAudio = new Audio('sound/COUNTER.mp3');
-    _counterAudio.loop   = true;
     _counterAudio.volume = audioConfig.sfx / 100;
     _counterAudio.load();
   }
