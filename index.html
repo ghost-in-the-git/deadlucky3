@@ -3406,6 +3406,13 @@
     setDieOutlineColor(die, 0xffffff);
     // White-highlight the score number in this die's origin hand slot
     if (die.originHandSlot != null) slotEls[die.originHandSlot].querySelector('.slot-score').style.color = '#ffffff';
+    playSelect();
+    const _baseScale = die.mesh.scale.x;
+    tween({
+      duration: 120,
+      ease: t => Math.sin(t * Math.PI),
+      onUpdate: t => die.mesh.scale.setScalar(_baseScale * (1 + 0.12 * t)),
+    }).then(() => die.mesh.scale.setScalar(_baseScale));
     const flags = { isMatch: die.isMatch, ...lineFlagsAtTile(tileIdx) };
     const ctx   = buildScoreCtx(die, tileIdx, flags);
     updateStrip({
