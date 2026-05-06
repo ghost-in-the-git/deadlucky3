@@ -3800,6 +3800,21 @@
     const streakBonus = multipliedTotal - roundTally;
     game.totalScore += streakBonus;
 
+    // Bust: no dice came back — show dramatic message then end session
+    if (returnedCount === 0) {
+      roundTallyEl.textContent = 'NO DICE';
+      roundStreakEl.textContent = `YOU LOST WITH ${RETURN_CAP - game.totalReturns} RETURNS REMAINING`;
+      await new Promise(res => setTimeout(res, 2000));
+      roundCounterEl.style.transition = 'opacity 0.4s ease-out';
+      roundCounterEl.style.opacity = '0';
+      await new Promise(res => setTimeout(res, 450));
+      roundCounterEl.style.display = 'none';
+      roundCounterEl.style.opacity = '';
+      roundCounterEl.style.transition = '';
+      scoreSectionEl.querySelectorAll('.stat').forEach(s => { s.style.visibility = ''; });
+      return endSession('bust');
+    }
+
     // Fade out round counter, count up top bar score, restore stat strip
     roundCounterEl.style.transition = 'opacity 0.3s ease-out';
     roundCounterEl.style.opacity = '0';
@@ -3826,7 +3841,7 @@
     }
 
     if (game.totalReturns >= RETURN_CAP) return endSession('cap');
-    if (returnedCount === 0)             return endSession('bust');
+    // bust already handled above with NO DICE message
   }
 
   async function returnDie(die) {
