@@ -3015,6 +3015,31 @@
   };
 
   const GEO = new THREE.BoxGeometry(1, 1, 1);
+  const _OVERLAY_GEO = new THREE.PlaneGeometry(1, 1);
+
+  function _getMatchOverlayMat(skinId) {
+    const tex = getSkinTex(skinId, 'FACE_9');
+    return new THREE.MeshBasicMaterial({ map: tex, depthTest: false });
+  }
+
+  function _addMatchOverlay(die) {
+    if (die._matchOverlay) return;
+    const skinId = die.skinId || DEFAULT_SKIN;
+    const plane = new THREE.Mesh(_OVERLAY_GEO, _getMatchOverlayMat(skinId));
+    plane.renderOrder = 200;
+    plane.position.set(die.mesh.position.x, die.mesh.position.y, 1);
+    plane.scale.setScalar(die.mesh.scale.x);
+    scene.add(plane);
+    die._matchOverlay = plane;
+  }
+
+  function _removeMatchOverlay(die) {
+    if (!die._matchOverlay) return;
+    scene.remove(die._matchOverlay);
+    die._matchOverlay.geometry.dispose();
+    die._matchOverlay.material.dispose();
+    die._matchOverlay = null;
+  }
 
   function makeDieMesh(_tint = 0xffffff, skinId = DEFAULT_SKIN, typeId = null) {
     // The PNG is the entire face — no color multiplier. Material.color
@@ -3036,12 +3061,10 @@
   function showFace(die, face) {
     const skinId = die.skinId || DEFAULT_SKIN;
     if (face === MATCH_FACE) {
-      const matchTex = getSkinTex(skinId, 'FACE_9');
-      die.mesh.material.forEach(m => {
-        m.map = matchTex;
-        m.color.setHex(0xff6680);  // warm tint to indicate match
-      });
+      _addMatchOverlay(die);
+      return;
     } else {
+      _removeMatchOverlay(die);
       const texFn = die.isSelected ? getSkinTexSelected : getSkinTex;
       die.mesh.material.forEach((m, i) => {
         const slotFace = SLOT_FACE[i];
@@ -3198,6 +3221,13 @@
   // ─── Render loop ──────────────────────────────────────────────────────
   function animate() {
     requestAnimationFrame(animate);
+    // Keep match overlays locked to their die's screen position
+    for (const die of Object.values(dice)) {
+      if (die._matchOverlay) {
+        die._matchOverlay.position.set(die.mesh.position.x, die.mesh.position.y, 1);
+        die._matchOverlay.scale.setScalar(die.mesh.scale.x);
+      }
+    }
     renderer.render(scene, camera);
   }
 
