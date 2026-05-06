@@ -4038,7 +4038,13 @@
     if (dieId == null) return;
     const die = dice[dieId];
     if (die.originHandSlot == null) return;
-    slotEls[die.originHandSlot].querySelector('.slot-score').textContent = previewScore(tileIdx);
+    const scoreEl3 = slotEls[die.originHandSlot].querySelector('.slot-score');
+    const newVal   = previewScore(tileIdx);
+    if (scoreEl3.textContent.trim() === '') {
+      countUp(scoreEl3, 0, newVal, 400);
+    } else {
+      scoreEl3.textContent = newVal;
+    }
   }
 
   function refreshAllTilePreviews() {
