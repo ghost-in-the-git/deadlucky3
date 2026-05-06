@@ -3299,6 +3299,7 @@
     }
 
     if (board[tileIdx] != null) {
+      playSelect();
       inspectTile(tileIdx);
       return;
     }
@@ -3417,7 +3418,6 @@
     setDieOutlineColor(die, 0xffffff);
     // White-highlight the score number in this die's origin hand slot
     if (die.originHandSlot != null) slotEls[die.originHandSlot].querySelector('.slot-score').style.color = '#ffffff';
-    playSelect();
     const _baseScale = die.mesh.scale.x;
     tween({
       duration: 120,
