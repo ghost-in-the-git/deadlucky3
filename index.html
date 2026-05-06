@@ -3145,9 +3145,11 @@
 
   // ─── Tween helper ─────────────────────────────────────────────────────
   function countUp(el, from, to, duration) {
+    const v = (el._countUpV = (el._countUpV || 0) + 1);
     const start = performance.now();
     const diff  = to - from;
     function step(now) {
+      if (el._countUpV !== v) return; // superseded by a newer call
       const p = Math.min((now - start) / duration, 1);
       const t = 1 - Math.pow(1 - p, 3); // ease-out cubic: fast start, slow finish
       el.textContent = Math.round(from + diff * t);
@@ -4040,11 +4042,8 @@
     if (die.originHandSlot == null) return;
     const scoreEl3 = slotEls[die.originHandSlot].querySelector('.slot-score');
     const newVal   = previewScore(tileIdx);
-    if (scoreEl3.textContent.trim() === '') {
-      countUp(scoreEl3, 0, newVal, 400);
-    } else {
-      scoreEl3.textContent = newVal;
-    }
+    const curVal   = parseInt(scoreEl3.textContent) || 0;
+    if (curVal !== newVal) countUp(scoreEl3, curVal, newVal, 400);
   }
 
   function refreshAllTilePreviews() {
