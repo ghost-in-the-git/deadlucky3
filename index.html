@@ -5781,7 +5781,7 @@
       valEl.textContent = slider.value;
       if (key === 'music' && _bgmAudio) _bgmAudio.volume = audioConfig.music / 100;
       if (key === 'sfx') {
-        if (_rollAudio)    _rollAudio.volume    = audioConfig.sfx / 100;
+        if (_rollAudio)    _rollAudio.volume    = Math.min(1, audioConfig.sfx / 100 * 1.5);
         if (_dealAudio)    _dealAudio.volume    = audioConfig.sfx / 100;
         if (_selectAudio)  _selectAudio.volume  = audioConfig.sfx / 100;
         if (_counterAudio) _counterAudio.volume = audioConfig.sfx / 100;
@@ -5805,7 +5805,7 @@
 
     // Pre-load the roll sound so it fires instantly
     _rollAudio = new Audio('sound/Dice Roll Swoosh Final.mp3');
-    _rollAudio.volume = audioConfig.sfx / 100;
+    _rollAudio.volume = Math.min(1, audioConfig.sfx / 100 * 1.5);
     _rollAudio.load();
 
     // Pre-load the deal sound (cloned per-hit for polyphony)
