@@ -4034,12 +4034,12 @@
       _stripTimeouts.push(setTimeout(() => {
         el.textContent = text;
         el.style.transition = 'transform 80ms ease-out';
-        el.style.transform  = 'scale(1.05)';
+        el.style.transform  = 'scale(1.2)';
         setTimeout(() => {
           el.style.transition = 'transform 120ms ease-out';
           el.style.transform  = '';
         }, 80);
-      }, i * 500));
+      }, i * 100));
     });
   }
 
