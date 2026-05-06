@@ -3222,7 +3222,7 @@
 
     // Clear any previous empty-slot inspection highlight
     if (game._emptySlotInspect != null) {
-      setSlotClass(game._emptySlotInspect, '');
+      slotEls[game._emptySlotInspect].querySelector('.slot-score').style.color = '';
       game._emptySlotInspect = null;
     }
 
@@ -3254,7 +3254,7 @@
         _deselectDie();
       }
       inspectTile(boardDie.location.slot);   // highlights tile + fills strip
-      setSlotClass(slotIdx, 'selected');     // also highlight the origin slot
+      slotEls[slotIdx].querySelector('.slot-score').style.color = '#ffffff';
       game._emptySlotInspect = slotIdx;
       return;
     }
@@ -3275,7 +3275,7 @@
   function onBoardTap(tileIdx) {
     if (game.ended || game.paused || game.animating > 0) return;
     if (game._emptySlotInspect != null) {
-      setSlotClass(game._emptySlotInspect, '');
+      slotEls[game._emptySlotInspect].querySelector('.slot-score').style.color = '';
       game._emptySlotInspect = null;
     }
 
