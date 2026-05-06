@@ -5746,13 +5746,19 @@
   // AURA is scaffolding only — disable for now.
   document.getElementById('layer-aura').disabled = true;
 
-  // Sliders — update audioConfig + display values live
+  // Sliders — update audioConfig + display values live, apply to audio
   ['music', 'sfx', 'vo'].forEach(key => {
     const slider = document.getElementById('slider-' + key);
     const valEl  = document.getElementById('val-' + key);
     slider.addEventListener('input', () => {
       audioConfig[key] = parseInt(slider.value, 10);
       valEl.textContent = slider.value;
+      if (key === 'music' && _bgmAudio) _bgmAudio.volume = audioConfig.music / 100;
+      if (key === 'sfx') {
+        if (_rollAudio)   _rollAudio.volume   = audioConfig.sfx / 100;
+        if (_dealAudio)   _dealAudio.volume   = audioConfig.sfx / 100;
+        if (_selectAudio) _selectAudio.volume = audioConfig.sfx / 100;
+      }
     });
   });
 
@@ -5766,21 +5772,21 @@
     // Background music — loop forever
     _bgmAudio = new Audio('sound/HEARTBEAT_FINAL.mp3');
     _bgmAudio.loop   = true;
-    _bgmAudio.volume = 0.6;
+    _bgmAudio.volume = audioConfig.music / 100;
     _bgmAudio.play().catch(() => {});
 
     // Pre-load the roll sound so it fires instantly
     _rollAudio = new Audio('sound/Dice Roll Swoosh Final.mp3');
-    _rollAudio.volume = 1.0;
+    _rollAudio.volume = audioConfig.sfx / 100;
     _rollAudio.load();
 
     // Pre-load the deal sound (cloned per-hit for polyphony)
     _dealAudio = new Audio('sound/DEAL.mp3');
-    _dealAudio.volume = 1.0;
+    _dealAudio.volume = audioConfig.sfx / 100;
     _dealAudio.load();
 
     _selectAudio = new Audio('sound/SELECT.mp3');
-    _selectAudio.volume = 1.0;
+    _selectAudio.volume = audioConfig.sfx / 100;
     _selectAudio.load();
   }
 
