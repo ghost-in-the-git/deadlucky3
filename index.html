@@ -3762,6 +3762,7 @@
     roundTallyEl.textContent = '0';
     roundStreakEl.textContent = '';
     roundCounterEl.style.display = 'flex';
+    if (_counterAudio) { _counterAudio.currentTime = 0; _counterAudio.play().catch(() => {}); }
 
     let roundTally = 0;
     let returnStreakCount = 0;
@@ -3797,8 +3798,10 @@
       roundTally += dieScore;
     }
 
-    // Wait for all bumps to finish + 1s hold
-    await new Promise(res => setTimeout(res, previewIdx * SCORE_STAGGER + SCORE_BUMP_MS + 1000));
+    // Wait for all bumps + tally count-ups to finish, then stop counter sound
+    await new Promise(res => setTimeout(res, previewIdx * SCORE_STAGGER + SCORE_BUMP_MS));
+    if (_counterAudio) { _counterAudio.pause(); _counterAudio.currentTime = 0; }
+    await new Promise(res => setTimeout(res, 1000));
 
     // Apply streak multiplier: animate tally from base to multiplied total
     const streakIdx    = Math.max(0, Math.min(returnStreakCount - 1, RETURN_STREAK.length - 1));
@@ -5755,9 +5758,10 @@
       valEl.textContent = slider.value;
       if (key === 'music' && _bgmAudio) _bgmAudio.volume = audioConfig.music / 100;
       if (key === 'sfx') {
-        if (_rollAudio)   _rollAudio.volume   = audioConfig.sfx / 100;
-        if (_dealAudio)   _dealAudio.volume   = audioConfig.sfx / 100;
-        if (_selectAudio) _selectAudio.volume = audioConfig.sfx / 100;
+        if (_rollAudio)    _rollAudio.volume    = audioConfig.sfx / 100;
+        if (_dealAudio)    _dealAudio.volume    = audioConfig.sfx / 100;
+        if (_selectAudio)  _selectAudio.volume  = audioConfig.sfx / 100;
+        if (_counterAudio) _counterAudio.volume = audioConfig.sfx / 100;
       }
     });
   });
@@ -5767,6 +5771,7 @@
   let _rollAudio = null;
   let _dealAudio = null;
   let _selectAudio = null;
+  let _counterAudio = null;
 
   function initAudio() {
     // Background music — loop forever
@@ -5788,6 +5793,11 @@
     _selectAudio = new Audio('sound/SELECT.mp3');
     _selectAudio.volume = audioConfig.sfx / 100;
     _selectAudio.load();
+
+    _counterAudio = new Audio('sound/COUNTER.mp3');
+    _counterAudio.loop   = true;
+    _counterAudio.volume = audioConfig.sfx / 100;
+    _counterAudio.load();
   }
 
   function playDiceRoll() {
