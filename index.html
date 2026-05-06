@@ -3758,6 +3758,9 @@
         scoreEl2.style.transform = 'scale(3.0)';
         scoreEl2.style.color = '#ffffff';
         countUp(roundTallyEl, fromTally, toTally, SCORE_STAGGER * 0.7);
+        roundTallyEl.style.transition = 'transform 80ms ease-out';
+        roundTallyEl.style.transform  = 'scale(1.2)';
+        setTimeout(() => { roundTallyEl.style.transition = 'transform 120ms ease-out'; roundTallyEl.style.transform = ''; }, 80);
         roundStreakEl.textContent = `×${streak.mult.toFixed(1)} ${streak.name}`;
         await new Promise(res => setTimeout(res, SCORE_BUMP_UP));
         scoreEl2.style.transition = `transform ${SCORE_BUMP_SET}ms ease-out`;
