@@ -3731,6 +3731,7 @@
 
   // ─── End of turn: snapshot + return sweep ─────────────────────────────
   async function endOfTurn() {
+    _deselectDie();
     const snapshot = board.map(id => id == null ? null : {
       id,
       rolledFace:    dice[id].rolledFace,
