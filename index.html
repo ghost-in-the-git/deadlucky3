@@ -3757,7 +3757,8 @@
     await new Promise(res => setTimeout(res, previewIdx * SCORE_STAGGER + SCORE_BUMP_MS + 1000));
 
     // Apply streak multiplier: animate tally from base to multiplied total
-    const finalStreak = RETURN_STREAK[Math.min(returnStreakCount - 1, RETURN_STREAK.length - 1)];
+    const streakIdx    = Math.max(0, Math.min(returnStreakCount - 1, RETURN_STREAK.length - 1));
+    const finalStreak  = RETURN_STREAK[streakIdx];
     const multipliedTotal = Math.round(roundTally * finalStreak.mult);
     if (multipliedTotal !== roundTally) {
       countUp(roundTallyEl, roundTally, multipliedTotal, 800);
