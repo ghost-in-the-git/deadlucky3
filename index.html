@@ -3304,6 +3304,12 @@
     }
     if (game.rolledDie == null) return;
     playSelect();
+    const _tileImg = tileEls[tileIdx].querySelector('.tile-value');
+    if (_tileImg) {
+      _tileImg.style.transition = 'transform 80ms ease-out';
+      _tileImg.style.transform  = 'scale(1.2)';
+      setTimeout(() => { _tileImg.style.transition = 'transform 120ms ease-out'; _tileImg.style.transform = ''; }, 80);
+    }
     placeDie(game.rolledDie, tileIdx);
   }
 
