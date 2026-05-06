@@ -111,12 +111,23 @@
       display: none;
       position: absolute;
       inset: 0;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
+      gap: 6px;
+    }
+    #round-tally {
       font-size: 3rem;
       font-weight: 700;
       color: #ffffff;
       letter-spacing: 0.04em;
+    }
+    #round-streak {
+      font-size: 0.85rem;
+      font-weight: 700;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.75);
     }
 
     .tile, .slot {
@@ -1864,7 +1875,7 @@
   </section>
 
   <section class="score" id="score-section" aria-label="Score">
-    <div id="round-counter">0</div>
+    <div id="round-counter"><span id="round-tally">0</span><span id="round-streak"></span></div>
     <div class="stat"><span class="label">Face</span><span class="value" id="stat-face">—</span></div>
     <div class="stat"><span class="label">Tile</span><span class="value" id="stat-tile">—</span></div>
     <div class="stat"><span class="label">Power</span><span class="value" id="stat-power">—</span></div>
@@ -2772,6 +2783,20 @@
   const returnsEl      = document.getElementById('total-returns');
   const scoreSectionEl = document.getElementById('score-section');
   const roundCounterEl = document.getElementById('round-counter');
+  const roundTallyEl   = document.getElementById('round-tally');
+  const roundStreakEl  = document.getElementById('round-streak');
+
+  const RETURN_STREAK = [
+    { name: 'SINGLE',  mult: 1.0 },
+    { name: 'DOUBLE',  mult: 1.2 },
+    { name: 'TRIPLE',  mult: 1.5 },
+    { name: 'QUAD',    mult: 1.8 },
+    { name: 'FIVE',    mult: 2.0 },
+    { name: 'SIX',     mult: 2.2 },
+    { name: 'SEVEN',   mult: 2.5 },
+    { name: 'EIGHT',   mult: 2.8 },
+    { name: 'PERFECT', mult: 3.0 },
+  ];
 
   // ─── Three.js setup ───────────────────────────────────────────────────
   const canvas   = document.getElementById('main-canvas');
@@ -3693,10 +3718,12 @@
 
     // Show round counter, hide stat cells
     scoreSectionEl.querySelectorAll('.stat').forEach(s => { s.style.visibility = 'hidden'; });
-    roundCounterEl.textContent = '0';
+    roundTallyEl.textContent = '0';
+    roundStreakEl.textContent = '';
     roundCounterEl.style.display = 'flex';
 
     let roundTally = 0;
+    let returnStreakCount = 0;
     let previewIdx = 0;
     for (let i = 0; i < N; i++) {
       const r = evalResult[i];
@@ -3706,25 +3733,36 @@
       if (!slotEl) { previewIdx++; continue; }
       const scoreEl2 = slotEl.querySelector('.slot-score');
       if (!scoreEl2) { previewIdx++; continue; }
-      // Compute this die's score now so the async callback can use it
       const dieScore = parseInt(scoreEl2.textContent) || 0;
       const delay = previewIdx * SCORE_STAGGER;
+      returnStreakCount++;
       previewIdx++;
-      (async (fromTally, toTally) => {
+      const streakEntry = RETURN_STREAK[Math.min(returnStreakCount - 1, RETURN_STREAK.length - 1)];
+      (async (fromTally, toTally, streak) => {
         await new Promise(res => setTimeout(res, delay));
         if (!game.paused) playDeal();
         scoreEl2.style.transition = `transform ${SCORE_BUMP_UP}ms ease-out, color ${SCORE_BUMP_UP}ms ease-out`;
         scoreEl2.style.transform = 'scale(3.0)';
         scoreEl2.style.color = '#ffffff';
-        countUp(roundCounterEl, fromTally, toTally, SCORE_STAGGER * 0.7);
+        countUp(roundTallyEl, fromTally, toTally, SCORE_STAGGER * 0.7);
+        roundStreakEl.textContent = `×${streak.mult.toFixed(1)} ${streak.name}`;
         await new Promise(res => setTimeout(res, SCORE_BUMP_UP));
         scoreEl2.style.transition = `transform ${SCORE_BUMP_SET}ms ease-out`;
         scoreEl2.style.transform = 'scale(2.5)';
-      })(roundTally, roundTally + dieScore);
+      })(roundTally, roundTally + dieScore, streakEntry);
       roundTally += dieScore;
     }
-    // Wait for all bumps to finish, then hold a full second before dice move
+
+    // Wait for all bumps to finish + 1s hold
     await new Promise(res => setTimeout(res, previewIdx * SCORE_STAGGER + SCORE_BUMP_MS + 1000));
+
+    // Apply streak multiplier: animate tally from base to multiplied total
+    const finalStreak = RETURN_STREAK[Math.min(returnStreakCount - 1, RETURN_STREAK.length - 1)];
+    const multipliedTotal = Math.round(roundTally * finalStreak.mult);
+    if (multipliedTotal !== roundTally) {
+      countUp(roundTallyEl, roundTally, multipliedTotal, 800);
+      await new Promise(res => setTimeout(res, 900));
+    }
 
     const scoreBeforeRound = game.totalScore;
     let returnedCount = 0;
@@ -3756,6 +3794,10 @@
       await returnDie(die);
       returnedCount++;
     }
+
+    // Apply streak multiplier bonus to actual game score
+    const streakBonus = multipliedTotal - roundTally;
+    game.totalScore += streakBonus;
 
     // Fade out round counter, count up top bar score, restore stat strip
     roundCounterEl.style.transition = 'opacity 0.3s ease-out';
