@@ -383,11 +383,11 @@
       top: 0; left: 0; right: 0;
       display: flex;
       justify-content: space-between;
-      align-items: center;
+      align-items: flex-start;
       padding: 16px 20px;
     }
     .home-user {
-      font-size: 0.75rem;
+      font-size: 1.125rem;
       letter-spacing: 0.18em;
       text-transform: uppercase;
       color: var(--ink-dim);
@@ -396,8 +396,10 @@
 
     .home-chips {
       display: flex;
-      gap: 16px;
-      font-size: 0.7rem;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 4px;
+      font-size: 1.05rem;
       letter-spacing: 0.18em;
       text-transform: uppercase;
       color: var(--ink-dim);
