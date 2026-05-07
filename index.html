@@ -378,23 +378,29 @@
     }
     .name-input:focus { border-color: var(--accent); }
 
+    .home-topbar {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 20px;
+    }
     .home-user {
       font-size: 0.75rem;
       letter-spacing: 0.18em;
       text-transform: uppercase;
       color: var(--ink-dim);
-      margin-bottom: 14px;
     }
     .home-user b { color: var(--ink); font-weight: 600; margin-left: 8px; }
 
     .home-chips {
       display: flex;
-      gap: 20px;
+      gap: 16px;
       font-size: 0.7rem;
       letter-spacing: 0.18em;
       text-transform: uppercase;
       color: var(--ink-dim);
-      margin-bottom: 8px;
     }
     .home-chips b { font-weight: 700; margin-left: 6px; }
     .home-chips .chips-val { color: #f5c542; }
@@ -1963,10 +1969,12 @@
 
   <!-- Home screen -->
   <div class="overlay" id="home-screen" style="background: #000;">
-    <div class="home-user">Player<b id="home-username">—</b></div>
-    <div class="home-chips" style="display:none;">
-      <span>Chips<b id="home-chips" class="chips-val">0</b></span>
-      <span>Shards<b id="home-shards" class="shards-val">0</b></span>
+    <div class="home-topbar">
+      <div class="home-user">Player<b id="home-username">—</b></div>
+      <div class="home-chips">
+        <span>Chips<b id="home-chips" class="chips-val">0</b></span>
+        <span>Shards<b id="home-shards" class="shards-val">0</b></span>
+      </div>
     </div>
     <button class="home-play-btn" id="home-play">Play</button>
     <div class="home-icon-grid">
