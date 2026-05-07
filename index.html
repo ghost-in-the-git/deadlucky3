@@ -196,6 +196,35 @@
     }
     .stat .label { font-size: 0.91rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-dim); }
     .stat .value { font-size: 1.73rem; font-weight: 700; color: var(--ink); }
+    .stat[data-info] { cursor: pointer; }
+
+    .stat-popup {
+      position: fixed; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      background: rgba(0,0,0,0.72);
+      z-index: 9999;
+    }
+    .stat-popup-inner {
+      background: #111;
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 14px;
+      padding: 28px 24px;
+      width: min(300px, 82%);
+      display: flex; flex-direction: column; gap: 14px;
+      text-align: center;
+    }
+    .stat-popup-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: #fff;
+    }
+    .stat-popup-body {
+      font-size: 0.85rem;
+      line-height: 1.6;
+      color: rgba(255,255,255,0.65);
+    }
 
     .section-label {
       position: absolute;
@@ -1942,12 +1971,19 @@
 
   <section class="score" id="score-section" aria-label="Score">
     <div id="round-counter"><div id="round-main"><span id="round-tally">0</span><span id="round-multiplier">× 1</span></div><span id="round-streak"></span></div>
-    <div class="stat"><span class="label">Face</span><span class="value" id="stat-face">—</span></div>
-    <div class="stat"><span class="label">Tile</span><span class="value" id="stat-tile">—</span></div>
-    <div class="stat"><span class="label">Power</span><span class="value" id="stat-power">—</span></div>
-    <div class="stat"><span class="label">Combo</span><span class="value" id="stat-combo">×1</span></div>
-    <div class="stat"><span class="label">Luck</span><span class="value" id="stat-luck">0</span></div>
+    <div class="stat" data-info="face"><span class="label">Face</span><span class="value" id="stat-face">—</span></div>
+    <div class="stat" data-info="tile"><span class="label">Tile</span><span class="value" id="stat-tile">—</span></div>
+    <div class="stat" data-info="power"><span class="label">Power</span><span class="value" id="stat-power">—</span></div>
+    <div class="stat" data-info="combo"><span class="label">Combo</span><span class="value" id="stat-combo">×1</span></div>
+    <div class="stat" data-info="luck"><span class="label">Luck</span><span class="value" id="stat-luck">0</span></div>
   </section>
+
+  <div id="stat-popup" class="stat-popup" style="display:none;">
+    <div class="stat-popup-inner">
+      <div class="stat-popup-title" id="stat-popup-title"></div>
+      <div class="stat-popup-body" id="stat-popup-body"></div>
+    </div>
+  </div>
 
   <section class="hand" id="hand-section" aria-label="Hand">
   </section>
@@ -2846,6 +2882,30 @@
   const statPower   = document.getElementById('stat-power');
   const statCombo   = document.getElementById('stat-combo');
   const statLuck    = document.getElementById('stat-luck');
+
+  // ─── Stat info popup ─────────────────────────────────────────────────
+  const STAT_INFO = {
+    face:  { title: 'Face', body: 'The score from the number your dice rolled. It always matches the rolled number unless you matched it with a board tile — which turns it into a 9.' },
+    tile:  { title: 'Tile', body: 'The bonus from the board tile your dice landed on. Each tile has a value that adds to your score when a dice is placed there.' },
+    power: { title: 'Power', body: 'A flat bonus added to your score. Power is earned through certain dice traits, board positions, and special abilities that activate during a round.' },
+    combo: { title: 'Combo', body: 'A score multiplier that increases when your dice form lines — triples, straights, or a cross. Higher combos multiply everything you score that round.' },
+    luck:  { title: 'Luck', body: 'A running total that grows each time one of your dice matches its tile. Luck feeds into the final score formula and persists across rounds in a session.' },
+  };
+
+  const statPopupEl      = document.getElementById('stat-popup');
+  const statPopupTitleEl = document.getElementById('stat-popup-title');
+  const statPopupBodyEl  = document.getElementById('stat-popup-body');
+
+  document.querySelectorAll('.stat[data-info]').forEach(el => {
+    el.addEventListener('click', () => {
+      const info = STAT_INFO[el.dataset.info];
+      if (!info) return;
+      statPopupTitleEl.textContent = info.title;
+      statPopupBodyEl.textContent  = info.body;
+      statPopupEl.style.display    = 'flex';
+    });
+  });
+  statPopupEl.addEventListener('click', () => { statPopupEl.style.display = 'none'; });
   const scoreEl        = document.getElementById('total-score');
   const returnsEl      = document.getElementById('total-returns');
   const scoreSectionEl = document.getElementById('score-section');
