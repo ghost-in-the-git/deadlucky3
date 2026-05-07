@@ -438,6 +438,27 @@
     .home-chips .chips-val { color: #f5c542; }
     .home-chips .shards-val { color: #7ecfff; }
 
+    .home-countdown {
+      position: absolute;
+      left: 50%; transform: translateX(-50%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+    }
+    .home-countdown-label {
+      font-size: 0.65rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--ink-dim);
+    }
+    .home-countdown b {
+      font-size: 1.05rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      color: var(--ink);
+    }
+
     .home-play-btn {
       width: min(320px, 88%);
       padding: 22px 0;
@@ -2010,6 +2031,7 @@
   <div class="overlay" id="home-screen" style="background: #000;">
     <div class="home-topbar">
       <div class="home-user">Player<b id="home-username">—</b></div>
+      <div class="home-countdown"><span class="home-countdown-label">Resets in</span><b id="home-countdown">00:00:00</b></div>
       <div class="home-chips">
         <span>Chips<b id="home-chips" class="chips-val">0</b></span>
         <span>Shards<b id="home-shards" class="shards-val">0</b></span>
@@ -4135,7 +4157,8 @@
   const summaryEl      = document.getElementById('summary-screen');
   const summaryBoardEl = document.getElementById('summary-board');
   const sumUsernameEl  = document.getElementById('summary-username');
-  const sumCountdownEl = document.getElementById('summary-countdown');
+  const sumCountdownEl  = document.getElementById('summary-countdown');
+  const homeCountdownEl = document.getElementById('home-countdown');
   const sumScoreEl     = document.getElementById('summary-score');
   const sumReturnsEl   = document.getElementById('sum-returns');
   const sumRollsEl     = document.getElementById('sum-rolls');
@@ -4224,7 +4247,9 @@
     const m = Math.floor((ms % 3600000) / 60000);
     const s = Math.floor((ms % 60000) / 1000);
     const pad = n => String(n).padStart(2, '0');
-    sumCountdownEl.textContent = `${pad(h)}:${pad(m)}:${pad(s)}`;
+    const t = `${pad(h)}:${pad(m)}:${pad(s)}`;
+    sumCountdownEl.textContent  = t;
+    homeCountdownEl.textContent = t;
   }
   let lastForgeDay = todayUTCKey();
   setInterval(() => {
