@@ -400,6 +400,53 @@
     .home-chips .chips-val { color: #f5c542; }
     .home-chips .shards-val { color: #7ecfff; }
 
+    .home-play-btn {
+      width: min(320px, 88%);
+      padding: 22px 0;
+      font-size: 1.4rem;
+      font-weight: 700;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      margin-bottom: 20px;
+    }
+    .home-play-btn:active { opacity: 0.85; }
+
+    .home-icon-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      width: min(320px, 88%);
+    }
+    .home-icon-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      aspect-ratio: 1;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 12px;
+      cursor: pointer;
+      padding: 0;
+    }
+    .home-icon-btn:active { background: rgba(255,255,255,0.1); }
+    .home-icon-emoji {
+      font-size: 2rem;
+      line-height: 1;
+    }
+    .home-icon-label {
+      font-size: 0.58rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.55);
+    }
+
     /* ─── Shrine hub ──────────────────────────────────────────────────── */
     .shrine-hub {
       justify-content: flex-start;
@@ -1917,17 +1964,19 @@
   <!-- Home screen -->
   <div class="overlay" id="home-screen" style="background: #000;">
     <div class="home-user">Player<b id="home-username">—</b></div>
-    <div class="home-chips">
+    <div class="home-chips" style="display:none;">
       <span>Chips<b id="home-chips" class="chips-val">0</b></span>
       <span>Shards<b id="home-shards" class="shards-val">0</b></span>
     </div>
-    <button class="menu-btn primary" id="home-play">Play</button>
-    <button class="menu-btn" id="home-deck-builder">Deck Builder</button>
-    <button class="menu-btn" id="home-shrine">Shrine</button>
-    <button class="menu-btn" id="home-research">Research</button>
-    <button class="menu-btn" id="home-leaderboard">Leaderboard</button>
-    <button class="menu-btn" id="home-tutorial">Tutorial</button>
-    <button class="menu-btn" id="home-options">Options</button>
+    <button class="home-play-btn" id="home-play">Play</button>
+    <div class="home-icon-grid">
+      <button class="home-icon-btn" id="home-deck-builder"><span class="home-icon-emoji">🎲</span><span class="home-icon-label">Deck Builder</span></button>
+      <button class="home-icon-btn" id="home-shrine"><span class="home-icon-emoji">⛩️</span><span class="home-icon-label">Shrine</span></button>
+      <button class="home-icon-btn" id="home-research"><span class="home-icon-emoji">🔬</span><span class="home-icon-label">Research</span></button>
+      <button class="home-icon-btn" id="home-leaderboard"><span class="home-icon-emoji">🏆</span><span class="home-icon-label">Leaderboard</span></button>
+      <button class="home-icon-btn" id="home-tutorial"><span class="home-icon-emoji">📖</span><span class="home-icon-label">Tutorial</span></button>
+      <button class="home-icon-btn" id="home-options"><span class="home-icon-emoji">⚙️</span><span class="home-icon-label">Options</span></button>
+    </div>
   </div>
 
   <!-- Mode carousel -->
