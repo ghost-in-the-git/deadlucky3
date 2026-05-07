@@ -962,10 +962,17 @@
       min-height: 44px;
     }
     .reveal-single-info .entry-label {
-      font-size: 0.9rem;
+      font-size: 1.6rem;
+      font-weight: 700;
       letter-spacing: 0.2em;
       text-transform: uppercase;
       color: var(--ink);
+    }
+    .reveal-summoned-sub {
+      font-size: 0.7rem;
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+      color: var(--ink-dim);
     }
     .reveal-single-info .new-tag {
       position: static;
@@ -2191,6 +2198,7 @@
     </div>
     <div class="reveal-single-info">
       <div class="entry-label" id="reveal-single-name">—</div>
+      <div class="reveal-summoned-sub" id="reveal-summoned-sub">Summoned</div>
       <div class="new-tag" id="reveal-single-new" style="display:none;">NEW</div>
     </div>
     <div class="reveal-actions dual">
@@ -5184,47 +5192,114 @@
     revealDie.add(revealOutline);
     revealScene.add(revealDie);
   }
-  function startRevealLoop() {
-    if (revealRaf != null) return;
-    const tick = () => {
-      revealDie.rotation.x += 0.002;
-      revealDie.rotation.y += 0.004;
-      revealRenderer.render(revealScene, revealCamera);
-      revealRaf = requestAnimationFrame(tick);
-    };
-    revealRaf = requestAnimationFrame(tick);
-  }
+  const revealSummonedSubEl = document.getElementById('reveal-summoned-sub');
+
   function stopRevealLoop() {
     if (revealRaf != null) { cancelAnimationFrame(revealRaf); revealRaf = null; }
   }
-  function renderRevealSingle() {
-    const r = pullResults[revealIdx];
-    const type = DIE_TYPES[r.typeId];
-    const total = pullResults.length;
-    revealSingleTitle.textContent = total > 1
-      ? `Summoned  ${revealIdx + 1} / ${total}`
-      : 'Summoned';
-    revealSingleName.textContent = type.name;
-    revealSingleNewTag.style.display = r.isNew ? '' : 'none';
-    // Rebind face 1 to the summoned type's trait icon — color is baked
-    // into the PNG itself so we don't touch material.color.
+
+  function _applyRevealTextures(typeId) {
     revealDie.material.forEach((m, i) => {
       const slotFace = SLOT_FACE[i];
       const idle = slotFace === 1;
-      m.map = getSkinTex(DEFAULT_SKIN, faceKeyFor(slotFace, { idle, typeId: r.typeId }));
+      m.map = getSkinTex(DEFAULT_SKIN, faceKeyFor(slotFace, { idle, typeId }));
       m.map.needsUpdate = true;
       m.needsUpdate = true;
     });
+  }
+
+  function startRevealAnimation(typeId) {
+    stopRevealLoop();
+
+    const FAST_MS   = 1400;
+    const SLOW_MS   = 900;
+    const SETTLE_MS = 380;
+    const startTime = performance.now();
+    let settled = false, nameShown = false;
+    let settleStart, settleFromY, settleFromX, settleToY, settleToX;
+
+    // Hide name until die settles
+    revealSingleName.style.transition = 'none';
+    revealSingleName.style.opacity    = '0';
+    revealSingleName.style.transform  = 'scale(1)';
+    revealSummonedSubEl.style.transition = 'none';
+    revealSummonedSubEl.style.opacity    = '0';
+
+    function tick(now) {
+      const el = now - startTime;
+
+      if (el < FAST_MS) {
+        revealDie.rotation.y += 0.18;
+        revealDie.rotation.x += 0.05;
+
+      } else if (el < FAST_MS + SLOW_MS) {
+        const p = (el - FAST_MS) / SLOW_MS;
+        const e = 1 - Math.pow(1 - p, 3);
+        revealDie.rotation.y += 0.18 * (1 - e);
+        revealDie.rotation.x += 0.05 * (1 - e);
+
+      } else if (!settled) {
+        settled = true;
+        settleStart = now;
+        settleFromY = revealDie.rotation.y;
+        settleFromX = revealDie.rotation.x;
+        // Snap target: face 1 toward camera = x=π/2, nearest 2π multiple
+        settleToY = Math.round(revealDie.rotation.y / (Math.PI * 2)) * Math.PI * 2;
+        settleToX = Math.PI / 2 + Math.round((revealDie.rotation.x - Math.PI / 2) / (Math.PI * 2)) * Math.PI * 2;
+
+      } else {
+        const sp = Math.min((now - settleStart) / SETTLE_MS, 1);
+        const se = 1 - Math.pow(1 - sp, 3);
+        revealDie.rotation.y = settleFromY + (settleToY - settleFromY) * se;
+        revealDie.rotation.x = settleFromX + (settleToX - settleFromX) * se;
+
+        if (sp >= 1 && !nameShown) {
+          nameShown = true;
+          // Bump name in
+          revealSingleName.style.transition = 'none';
+          revealSingleName.style.transform  = 'scale(2.2)';
+          revealSingleName.style.opacity    = '1';
+          requestAnimationFrame(() => {
+            revealSingleName.style.transition = 'transform 350ms cubic-bezier(0.22,1,0.36,1), opacity 150ms ease-out';
+            revealSingleName.style.transform  = 'scale(1)';
+          });
+          // Sub-label fades in just after
+          setTimeout(() => {
+            revealSummonedSubEl.style.transition = 'opacity 300ms ease-out';
+            revealSummonedSubEl.style.opacity    = '1';
+            revealSingleNewTag.style.opacity     = '1';
+          }, 200);
+        }
+      }
+
+      revealRenderer.render(revealScene, revealCamera);
+      revealRaf = requestAnimationFrame(tick);
+    }
+    revealRaf = requestAnimationFrame(tick);
+  }
+
+  function renderRevealSingle() {
+    const r    = pullResults[revealIdx];
+    const type = DIE_TYPES[r.typeId];
+    const total = pullResults.length;
+    revealSingleTitle.textContent = total > 1 ? `Summoned  ${revealIdx + 1} / ${total}` : 'Summoned';
+    revealSingleName.textContent     = type.name;
+    revealSingleNewTag.style.display = r.isNew ? '' : 'none';
+    revealSingleNewTag.style.opacity = '0';
     revealNextBtn.textContent = (revealIdx === total - 1) ? 'Finish' : 'Next';
     revealSkipBtn.style.display = total > 1 ? '' : 'none';
+    _applyRevealTextures(r.typeId);
   }
+
   function openRevealSingle(idx) {
     revealIdx = idx | 0;
     refreshCurrencyUI();
     initRevealScene();
+    // Reset die spin to a known start so each reveal feels fresh
+    revealDie.rotation.set(0, 0, 0);
     renderRevealSingle();
     showOverlay(revealSingleEl);
-    startRevealLoop();
+    startRevealAnimation(pullResults[revealIdx].typeId);
   }
   function advanceReveal() {
     if (revealIdx >= pullResults.length - 1) {
