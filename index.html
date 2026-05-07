@@ -3149,8 +3149,6 @@
   };
 
   const GEO = new THREE.BoxGeometry(1, 1, 1);
-  const _OVERLAY_GEO = new THREE.PlaneGeometry(1, 1);
-
   function _getMatchOverlayMat(skinId) {
     const tex = getSkinTex(skinId, 'FACE_9');
     return new THREE.MeshBasicMaterial({ map: tex, depthTest: false });
@@ -3159,7 +3157,7 @@
   function _addMatchOverlay(die) {
     if (die._matchOverlay) return;
     const skinId = die.skinId || DEFAULT_SKIN;
-    const plane = new THREE.Mesh(_OVERLAY_GEO, _getMatchOverlayMat(skinId));
+    const plane = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), _getMatchOverlayMat(skinId));
     plane.renderOrder = 200;
     plane.position.set(die.mesh.position.x, die.mesh.position.y, 1);
     plane.scale.setScalar(die.mesh.scale.x);
@@ -5212,6 +5210,8 @@
       const slotFace = SLOT_FACE[i];
       const idle = slotFace === 1;
       m.map = getSkinTex(DEFAULT_SKIN, faceKeyFor(slotFace, { idle, typeId: r.typeId }));
+      m.map.needsUpdate = true;
+      m.needsUpdate = true;
     });
     revealNextBtn.textContent = (revealIdx === total - 1) ? 'Finish' : 'Next';
     revealSkipBtn.style.display = total > 1 ? '' : 'none';
