@@ -2504,7 +2504,11 @@
   function isStraightFaces(faces) {
     const [a, b, c] = faces;
     return (b === a + 1 && c === b + 1)   // ascending
-        || (b === a - 1 && c === b - 1);  // descending
+        || (b === a - 1 && c === b - 1)   // descending
+        || (a === 6 && b === 1 && c === 2) // wrap: 6,1,2
+        || (a === 2 && b === 1 && c === 6) // wrap: 2,1,6
+        || (a === 1 && b === 6 && c === 5) // wrap: 1,6,5
+        || (a === 5 && b === 6 && c === 1); // wrap: 5,6,1
   }
   function isTripleFaces(faces) {
     return faces[0] === faces[1] && faces[1] === faces[2];
