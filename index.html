@@ -5174,11 +5174,13 @@
     f.position.set(-2, -1, 3); revealScene.add(f);
     revealDie = makeDieMesh(0xffffff);
     revealDie.scale.setScalar(1.2);
+    revealDie.renderOrder = 1;
     const revealOutline = new THREE.Mesh(
-      GEO,
-      new THREE.MeshBasicMaterial({ color: 0xf0c040, side: THREE.BackSide })
+      new THREE.BoxGeometry(1, 1, 1),
+      new THREE.MeshBasicMaterial({ color: 0xf0c040, side: THREE.BackSide, depthTest: false })
     );
     revealOutline.scale.setScalar(1.08);
+    revealOutline.renderOrder = 0;
     revealDie.add(revealOutline);
     revealScene.add(revealDie);
   }
