@@ -2920,9 +2920,11 @@
       if (key === 'power') {
         const selDie = game.selectedDie != null
           ? dice[game.selectedDie]
-          : (game.inspectedTile != null && board[game.inspectedTile] != null
-              ? dice[board[game.inspectedTile]]
-              : null);
+          : game.rolledDie != null
+            ? dice[game.rolledDie]
+            : (game.inspectedTile != null && board[game.inspectedTile] != null
+                ? dice[board[game.inspectedTile]]
+                : null);
         if (selDie && selDie.type) {
           title = selDie.type.name;
           body  = selDie.type.flavor + '\n\n' + info.body;
@@ -4261,9 +4263,11 @@
     _stripTimeouts = [];
     const selDie = game.selectedDie != null
       ? dice[game.selectedDie]
-      : (game.inspectedTile != null && board[game.inspectedTile] != null
-          ? dice[board[game.inspectedTile]]
-          : null);
+      : game.rolledDie != null
+        ? dice[game.rolledDie]
+        : (game.inspectedTile != null && board[game.inspectedTile] != null
+            ? dice[board[game.inspectedTile]]
+            : null);
     statPowerLabelEl.textContent = (selDie && selDie.type) ? selDie.type.name : 'Power';
     const entries = [
       { el: statFace,  text: face  != null ? String(face)  : '—' },
