@@ -3465,7 +3465,7 @@
       clearInspection();                     // only one highlight at a time
       _selectDie(dieId);
       playSelect();
-      updateStrip({ face: 0, tile: 0, power: 0, combo: 0, luck: 0 });
+      updateStrip({ face: 0, tile: 0, power: 0, combo: 0 });
       const _tutLock = tut && TUT_STEPS[tut.step] && TUT_STEPS[tut.step].lock;
       if (_tutLock === 'select-1' || _tutLock === 'select-2') advanceTutorial();
     }
