@@ -495,15 +495,13 @@
       padding: 0;
     }
     .home-icon-btn:active { background: rgba(255,255,255,0.1); }
-    .home-icon-emoji {
-      font-size: 2rem;
-      line-height: 1;
-    }
-    .home-icon-label {
-      font-size: 0.58rem;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      color: rgba(255,255,255,0.55);
+    .home-icon-img {
+      width: 78%;
+      height: 78%;
+      object-fit: contain;
+      pointer-events: none;
+      -webkit-user-drag: none;
+      user-select: none;
     }
 
     /* ─── Shrine hub ──────────────────────────────────────────────────── */
@@ -2025,12 +2023,12 @@
     </div>
     <button class="home-play-btn" id="home-play">Play</button>
     <div class="home-icon-grid">
-      <button class="home-icon-btn" id="home-deck-builder"><span class="home-icon-emoji">🎲</span><span class="home-icon-label">Deck Builder</span></button>
-      <button class="home-icon-btn" id="home-shrine"><span class="home-icon-emoji">⛩️</span><span class="home-icon-label">Shrine</span></button>
-      <button class="home-icon-btn" id="home-research"><span class="home-icon-emoji">🔬</span><span class="home-icon-label">Research</span></button>
-      <button class="home-icon-btn" id="home-leaderboard"><span class="home-icon-emoji">🏆</span><span class="home-icon-label">Leaderboard</span></button>
-      <button class="home-icon-btn" id="home-tutorial"><span class="home-icon-emoji">📖</span><span class="home-icon-label">Tutorial</span></button>
-      <button class="home-icon-btn" id="home-options"><span class="home-icon-emoji">⚙️</span><span class="home-icon-label">Options</span></button>
+      <button class="home-icon-btn" id="home-deck-builder" aria-label="Deck Builder"><img class="home-icon-img" src="icons/DECK@2x.png" alt="Deck Builder"></button>
+      <button class="home-icon-btn" id="home-shrine" aria-label="Shrine"><img class="home-icon-img" src="icons/SUMMON@2x.png" alt="Shrine"></button>
+      <button class="home-icon-btn" id="home-research" aria-label="Research"><img class="home-icon-img" src="icons/RESEARCH@2x.png" alt="Research"></button>
+      <button class="home-icon-btn" id="home-leaderboard" aria-label="Leaderboard"><img class="home-icon-img" src="icons/RANKS@2x.png" alt="Leaderboard"></button>
+      <button class="home-icon-btn" id="home-tutorial" aria-label="Tutorial"><img class="home-icon-img" src="icons/LESSONS@2x.png" alt="Tutorial"></button>
+      <button class="home-icon-btn" id="home-options" aria-label="Options"><img class="home-icon-img" src="icons/OPTIONS@2x.png" alt="Options"></button>
     </div>
   </div>
 
